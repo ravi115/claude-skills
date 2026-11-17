@@ -1,0 +1,25 @@
+{
+  "name": "pipzo-classroom-2d",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "still": "remotion still src/llm2/index.jsx Ep2",
+    "render": "remotion render src/llm2/index.jsx Ep2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/kalam": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@remotion/cli": "4.0.543",
+    "@remotion/renderer": "4.0.543",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.543",
+    "@remotion/lambda": "4.0.543"
+  }
+}
