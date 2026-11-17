@@ -26,7 +26,7 @@ The shipped `content/` files and `examples/ep3/episode.json` are Episode 3. Use 
 
 **What the template always does (cannot be switched off):**
 - **Both portraits in the middle:** Professor left 10, Emily left 480, size 470. The speaker is at full brightness and the other at 72%. They hide only while a punch-in close-up fills the screen.
-- **Captions:** the word being spoken lights up in the speaker's neon colour. Professor is green neon `#2DD4BF`; Emily is violet neon `#B57BFF`, and her lines carry an EMILY tag. Positions: 1235 in the classroom, 1300 in the middle, 1680 under a cold-open device, 1400 under the Follow card.
+- **Captions:** the word being spoken lights up in the speaker's neon colour. Professor is green neon `#2DD4BF`; Emily is pink neon `#F472B6` (as in Episodes 2–4, portrait glow and label too), and her lines carry an EMILY tag. Positions: 1235 in the classroom, 1300 in the middle, 1680 under a cold-open device, 1400 under the Follow card.
 - **Pull-back:** the end frame holds, then shrinks onto the board over 1.6 s while the classroom fades back around it. It stays on the board until the end.
 - **Closing:** the Follow card sits over the classroom (wide shot, diagram on the board). The robot blinks, Follow pulses, and the card shows "Next · Episode N" and the next title. The last spoken line is the comment question.
 - **Header:** "SERIES · EP N", progress bar, and @pipzo.ai.
@@ -146,7 +146,7 @@ From `remotion/project/`:
 ## QA before the user sees it
 Download the render and compare it with Episode 3 (`references/video/combined/qa-episode-3/`, frames named by moment). Check each of these, and fix anything that fails:
 1. **Middle:** both portraits visible at the bottom, both labelled, and the speaker brighter.
-2. **Captions:** the spoken word lights up green for the Professor and violet for Emily. Emily's lines have the EMILY tag. Captions never cover a face or the board writing.
+2. **Captions:** the spoken word lights up green for the Professor and pink for Emily. Emily's lines have the EMILY tag. Captions never cover a face or the board writing.
 3. **Push-in:** it lands on the pink object, and the middle opens on the same object.
 4. **Pull-back:** the end frame shrinks onto the board with no jump or pop. Check stills at pull start +0.3, +0.8 and +1.4 s. The end frame never covers the Professor's head.
 5. **Closing:** the Follow card is over the classroom with the diagram on the board. The robot blinks (check two frames 0.1 s apart at a blink). "Next · Episode N" shows the next title. The last spoken line is the comment question.
