@@ -1,0 +1,5 @@
+remotion/project/node_modules/
+remotion/project/public/ep3d/*/
+!remotion/project/public/ep3d/fonts/
+remotion/project/public/ep3d/mix.wav
+__pycache__/

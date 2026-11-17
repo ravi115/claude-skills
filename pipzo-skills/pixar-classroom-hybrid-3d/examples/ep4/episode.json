@@ -1,0 +1,305 @@
+{
+ "series": "Large Language Models, GPT-2",
+ "ep": 4,
+ "title": "The Transformer in One Minute",
+ "handle": true,
+ "banner": null,
+ "remember": null,
+ "follow": {
+  "next_n": 5,
+  "next_title": "Pretrain, Then Finetune",
+  "tap": false
+ },
+ "push": {
+  "after": "P04",
+  "zoom": 5.0,
+  "lead": 0.5
+ },
+ "pull": {
+  "after": "P13",
+  "hold": 0.4
+ },
+ "lines": [
+  {
+   "id": "E01",
+   "who": "S",
+   "voice": "emily-annoyed-flat",
+   "text": "It translates Hindi perfectly \u2014 but can't write your mum's birthday card.",
+   "shot": "device",
+   "at": 0.25
+  },
+  {
+   "id": "P02",
+   "who": "P",
+   "voice": "PB-curious-mystery",
+   "text": "Reading and writing look like one skill. Inside the machine, they are two.",
+   "shot": "wide"
+  },
+  {
+   "id": "E03",
+   "who": "S",
+   "voice": "emily-confident-smug",
+   "text": "Reading and writing are the same thing. If it understands my sentence, it can write one.",
+   "shot": "cuS",
+   "gap": 0.2
+  },
+  {
+   "id": "P03",
+   "who": "P",
+   "voice": "X-prof-teasing-bet",
+   "text": "Bet. If understanding were enough, your translator could write your mum's birthday card. Lunch says it can't.",
+   "shot": "cuP",
+   "gap": 0.2,
+   "motion": [
+    [
+     "nod",
+     "lunch"
+    ]
+   ]
+  },
+  {
+   "id": "P04",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "One paper, in 2017, put them in one box \u2014 'Attention Is All You Need'. Attention is how the model weighs which words matter most. Look inside.",
+   "shot": "point",
+   "gap": 0.2
+  },
+  {
+   "id": "P05",
+   "who": "P",
+   "voice": "PB-calm-teaching",
+   "text": "Think of a team translating a book. First, someone reads the whole chapter."
+  },
+  {
+   "id": "P06",
+   "who": "P",
+   "voice": "PB-calm-teaching",
+   "text": "Then someone else writes it in the new language, one word at a time \u2014 checking the original after every word.",
+   "gap": 0.25
+  },
+  {
+   "id": "P07",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "Models that translate or summarise often use both halves. But GPT uses only the decoder.",
+   "walk": true
+  },
+  {
+   "id": "P08",
+   "who": "P",
+   "voice": "PB-thoughtful-reflective",
+   "text": "A writer that reads its own writing as it goes.",
+   "walk": true
+  },
+  {
+   "id": "P09",
+   "who": "P",
+   "voice": "PB-serious-slow",
+   "text": "GPT never reads the way you think. It only writes \u2014 and reading its own writing is the whole trick.",
+   "gap": 0.3
+  },
+  {
+   "id": "E10",
+   "who": "S",
+   "voice": "emily-challenging-sharp",
+   "text": "Then show me the two halves doing two jobs.",
+   "walk": true,
+   "gap": 2.2
+  },
+  {
+   "id": "P10",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "Same sentence. Two machines.",
+   "gap": 0.2
+  },
+  {
+   "id": "P11",
+   "who": "P",
+   "voice": "PB-calm-teaching",
+   "text": "The decoder writes the birthday message, word by word. The encoder sorts the documents \u2014 sorting is reading and understanding what each one says.",
+   "gap": 0.25
+  },
+  {
+   "id": "P12",
+   "who": "P",
+   "voice": "PB-excited-energetic",
+   "text": "An agent does the next thing \u2014 write the reply, call the tool, take the next step. A tool is another program it can use.",
+   "walk": true
+  },
+  {
+   "id": "E13",
+   "who": "S",
+   "voice": "emily-puzzled-unsure",
+   "text": "But if GPT only writes, how does it understand my question at all?",
+   "walk": true
+  },
+  {
+   "id": "P13",
+   "who": "P",
+   "voice": "PB-thoughtful-reflective",
+   "text": "It doesn't understand the way you do \u2014 your question goes in first, as the starting input. Then it predicts the next word \u2014 again and again.",
+   "gap": 0.25
+  },
+  {
+   "id": "P14",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "The transformer reads, then writes. GPT keeps only the writer.",
+   "shot": "wide",
+   "gap": 0.35
+  },
+  {
+   "id": "E14",
+   "who": "S",
+   "voice": "X-emily-laugh-defeat",
+   "text": "Not a movie robot. A writer robot. And I owe you lunch.",
+   "shot": "cuS",
+   "gap": 0.3,
+   "motion": [
+    [
+     "bounce",
+     "lunch"
+    ]
+   ]
+  },
+  {
+   "react": "cuS",
+   "dur": 0.7,
+   "gap": 0.05
+  },
+  {
+   "id": "P15a",
+   "who": "P",
+   "voice": "PB-curious-mystery",
+   "text": "Next episode \u2014 how is such a model actually built? In two stages, and the order matters. Get it backwards and you waste millions.",
+   "shot": "wide",
+   "gap": 0.2,
+   "role": "next"
+  },
+  {
+   "id": "P15b",
+   "who": "P",
+   "voice": "PB-warm-welcoming",
+   "text": "Encoder or decoder \u2014 which half would your job need more, reading or writing? Tell us.",
+   "shot": "wide",
+   "gap": 0.35,
+   "role": "ask"
+  }
+ ],
+ "stations": [
+  {
+   "models": [
+    {
+     "kind": "encoder",
+     "at": "P05:reads"
+    },
+    {
+     "kind": "decoder",
+     "at": "P06:writes"
+    }
+   ]
+  },
+  {
+   "models": [
+    {
+     "kind": "encoder",
+     "off": "P07:only"
+    },
+    {
+     "kind": "decoder"
+    }
+   ]
+  },
+  {
+   "models": [
+    {
+     "kind": "decoder"
+    }
+   ]
+  },
+  {
+   "models": [
+    {
+     "kind": "decoder",
+     "at": "P11:decoder"
+    },
+    {
+     "kind": "encoder",
+     "at": "P11:encoder"
+    }
+   ]
+  },
+  {
+   "models": [
+    {
+     "kind": "decoder"
+    }
+   ]
+  },
+  {
+   "models": [
+    {
+     "kind": "decoder",
+     "at": "P13:goes"
+    }
+   ]
+  }
+ ],
+ "sound": [
+  {
+   "type": "tick",
+   "at": "E01",
+   "offset": 0.0
+  },
+  {
+   "type": "tick",
+   "at": "E01",
+   "offset": 0.45
+  },
+  {
+   "type": "tick",
+   "at": "E01",
+   "offset": 4.37
+  },
+  {
+   "type": "bed",
+   "from": "P02:inside",
+   "to": "P15b"
+  },
+  {
+   "type": "nomusic",
+   "from": "E03",
+   "to": "P03"
+  },
+  {
+   "type": "nomusic",
+   "from": "P09:end",
+   "to": "E10:start"
+  },
+  {
+   "type": "nomusic",
+   "from": "E13",
+   "to": "E13"
+  },
+  {
+   "type": "lift",
+   "from": "P14",
+   "to": "E14"
+  },
+  {
+   "type": "tick",
+   "at": "P06:one",
+   "every": 0.52,
+   "n": 5
+  },
+  {
+   "type": "tick",
+   "at": "P11:birthday",
+   "offset": -0.3,
+   "every": 0.4,
+   "n": 7
+  }
+ ]
+}

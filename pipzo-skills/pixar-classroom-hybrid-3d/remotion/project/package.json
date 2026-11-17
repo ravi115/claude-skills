@@ -1,0 +1,28 @@
+{
+  "name": "pipzo-classroom-3d",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "still": "remotion still src/ep3d/index.jsx Ep3D",
+    "render": "remotion render src/ep3d/index.jsx Ep3D"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/kalam": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@remotion/cli": "4.0.544",
+    "@remotion/renderer": "4.0.544",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.544",
+    "@remotion/lambda": "4.0.544",
+    "@remotion/three": "4.0.544",
+    "@react-three/fiber": "^9.8.2",
+    "three": "^0.187.0"
+  }
+}
