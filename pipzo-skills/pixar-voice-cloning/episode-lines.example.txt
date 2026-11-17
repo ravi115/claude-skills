@@ -1,0 +1,6 @@
+# ID | Voice | Text        (Voice = a name from voices.md; one spoken line per row)
+E01 | emily-annoyed-flat | I lost my card again, and the bot keeps saying try balance or statement.
+P02 | PB-urgent-warm | We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Today is step four.
+E03 | X-emily-cocky | Easy. Just write better rules.
+P03 | X-prof-teasing-bet | Oh, you really think so? All right then, let's make it interesting.
+P05 | PB-calm-teaching | Think of a team translating a sentence. First, someone reads the whole thing.

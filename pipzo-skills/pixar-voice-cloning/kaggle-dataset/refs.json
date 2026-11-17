@@ -1,0 +1,186 @@
+{
+ "X-prof-urgent-alarm": {
+  "file": "wav-drama/prof-x-urgent-alarm.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Wait, wait, look at this! Did you see that? They just changed one letter and walked right past it!"
+ },
+ "X-prof-triumphant": {
+  "file": "wav-drama/prof-x-triumphant.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. And then everything changed. One machine, and suddenly it could do it all. Every single job."
+ },
+ "X-prof-teasing-bet": {
+  "file": "wav-drama/prof-x-teasing-bet.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Oh, you really think so? All right then, let's make it interesting. Loser buys lunch."
+ },
+ "X-prof-mystery-invite": {
+  "file": "wav-drama/prof-x-mystery-invite.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Come closer. I want to show you something most people never see. Ready? Let's open it."
+ },
+ "X-prof-exasperated": {
+  "file": "wav-drama/prof-x-exasperated.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Another one! And another one! Every single time we fix it, they break it again! It never ever stops!"
+ },
+ "X-prof-dramatic-reveal": {
+  "file": "wav-drama/prof-x-dramatic-reveal.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Here's the thing nobody tells you. It was never about the answer. It was about who had to do the work."
+ },
+ "X-emily-stunned": {
+  "file": "wav-drama/emily-x-stunned.wav",
+  "text": "Oh. Oh no. I just lost, didn't I?"
+ },
+ "X-emily-outraged": {
+  "file": "wav-drama/emily-x-outraged.wav",
+  "text": "Seriously? No way! That's it? That's all it took?"
+ },
+ "X-emily-laugh-defeat": {
+  "file": "wav-drama/emily-x-laugh-defeat.wav",
+  "text": "Okay, okay, fine. You win. But I still want my card back."
+ },
+ "X-emily-irritated": {
+  "file": "wav-drama/emily-x-irritated.wav",
+  "text": "Ugh, ugh, not again. Wow, super helpful. Thanks a lot, robot."
+ },
+ "X-emily-gasp-amazed": {
+  "file": "wav-drama/emily-x-gasp-amazed.wav",
+  "text": "Wait, every single one? That's incredible!"
+ },
+ "X-emily-cocky": {
+  "file": "wav-drama/emily-x-cocky.wav",
+  "text": "Pfft, that's easy! Just fix it properly! Honestly, how hard can it be?"
+ },
+ "PB-warm-welcoming": {
+  "file": "wav-anchored/pb-warm-welcoming.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Good question. Honestly, that is exactly the question I hoped someone would ask today. Come a little closer."
+ },
+ "PB-thoughtful-reflective": {
+  "file": "wav-anchored/pb-thoughtful-reflective.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Hmm. You know, it doesn't really know anything. It learned the pattern. And sometimes..."
+ },
+ "PB-relieved-satisfied": {
+  "file": "wav-anchored/pb-relieved-satisfied.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. There it is. It works. One model, no rulebook, and it finally understands what..."
+ },
+ "PB-excited-energetic": {
+  "file": "wav-anchored/pb-excited-energetic.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. And look at that! One model, and it can write, translate, summarize, and answer questions. This is the moment."
+ },
+ "PB-confident-clear": {
+  "file": "wav-anchored/pb-confident-clear.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Here's the takeaway. The old way was rules for every task. The new way is one model that learned language itself."
+ },
+ "PB-serious-slow": {
+  "file": "wav-anchored/pb-serious-slow.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. The problem was never the rules. The problem was that someone had to write them. Every single one."
+ },
+ "PB-frustrated-tired": {
+  "file": "wav-anchored/pb-frustrated-tired.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Another rule. Then another rule. And every time we fix one, they find a new way around it."
+ },
+ "PB-urgent-warm": {
+  "file": "wav-anchored/pb-urgent-warm.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Okay, okay, stay with me. This part matters. The bot is down, customers are waiting, and we need to find that bug right now."
+ },
+ "PB-calm-teaching": {
+  "file": "wav-anchored/pb-calm-teaching.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Let's take this one step at a time. A model reads your sentence, looks at every word, and makes one careful..."
+ },
+ "PB-curious-mystery": {
+  "file": "wav-anchored/pb-curious-mystery.wav",
+  "text": "We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Now here's the strange part. Nobody told it the rules of grammar. Nobody. So how does it know?"
+ },
+ "emily-thoughtful-quiet": {
+  "file": "wav/emily-thoughtful-quiet.wav",
+  "text": "Huh. So the problem was never the rules themselves. It was that someone had to write every single one."
+ },
+ "emily-proud-satisfied": {
+  "file": "wav/emily-proud-satisfied.wav",
+  "text": "So it learned the pattern, not the rules. A whole library, not one book. I got it!"
+ },
+ "emily-grinning-laughing": {
+  "file": "wav/emily-grinning-laughing.wav",
+  "text": "Fine, fine! Lunch is on me. But honestly? The bank still owes me a card."
+ },
+ "emily-surprised-sharp-turn": {
+  "file": "wav/emily-surprised-sharp-turn.wav",
+  "text": "So it's just better rules, right? Wait. Wait, what? Nobody wrote them? Not one rule? At all?"
+ },
+ "emily-puzzled-unsure": {
+  "file": "wav/emily-puzzled-unsure.wav",
+  "text": "But wait. If nobody writes the rules, then how does it even know what spam is? I don't get it."
+ },
+ "emily-challenging-sharp": {
+  "file": "wav/emily-challenging-sharp.wav",
+  "text": "Okay, prove it. Ask the old bot and the new model the exact same thing, and let's see who wins."
+ },
+ "emily-confident-smug": {
+  "file": "wav/emily-confident-smug.wav",
+  "text": "Easy. The bank just wrote bad rules. Write better rules and it works. Done. Next question."
+ },
+ "emily-annoyed-flat": {
+  "file": "wav/emily-annoyed-flat.wav",
+  "text": "I lost my card. Again. And the bot just keeps saying, try balance or statement. Seriously."
+ },
+ "emily-excited-amazed": {
+  "file": "wav/emily-excited-amazed.wav",
+  "text": "No way! It answered all three? That's amazing! Okay, okay, I need to try this right now!"
+ },
+ "emily-bright-curious": {
+  "file": "wav/emily-bright-curious.wav",
+  "text": "Wait, so how does it actually know which word comes next? Like, is it reading the whole sentence first? Or just guessing?"
+ },
+ "emily-arc-bright-excited-surprised": {
+  "file": "wav/emily-arc-bright-excited-surprised.wav",
+  "text": "Okay, so how does this one actually work? Oh, it reads the whole thing first? That's so cool! Wait. Wait, what? It never saw the answer? Then how did it get it right?"
+ },
+ "professor-thoughtful-reflective": {
+  "file": "wav/professor-thoughtful-reflective.wav",
+  "text": "Hmm. You know, it doesn't really know anything. It learned the pattern. And sometimes, that's enough."
+ },
+ "professor-confident-clear": {
+  "file": "wav/professor-confident-clear.wav",
+  "text": "Here's the takeaway. The old way was rules for every task. The new way is one model that learned language itself. Simple as that."
+ },
+ "professor-relieved-satisfied": {
+  "file": "wav/professor-relieved-satisfied.wav",
+  "text": "There it is. It works. One model, no rule book, and it finally understands what people actually mean."
+ },
+ "professor-frustrated-tired": {
+  "file": "wav/professor-frustrated-tired.wav",
+  "text": "Another rule. Then another rule. And every time we fix one, they find a new way around it. It just never ends."
+ },
+ "professor-urgent-warm": {
+  "file": "wav/professor-urgent-warm.wav",
+  "text": "Okay, okay, stay with me, this part matters. The bot is down, customers are waiting, and we need to find that bug right now. Don't worry, we'll get it."
+ },
+ "professor-serious-slow": {
+  "file": "wav/professor-serious-slow.wav",
+  "text": "The problem was never the rules. The problem was that someone had to write them. Every single one. By hand."
+ },
+ "professor-surprised-impressed": {
+  "file": "wav/professor-surprised-impressed.wav",
+  "text": "Wait, really? It got all three right? Even the one with the spelling trick? Huh. That is genuinely impressive."
+ },
+ "professor-excited-energetic": {
+  "file": "wav/professor-excited-energetic.wav",
+  "text": "And look at that! One model, and it can write, translate, summarise and answer questions! This is the moment everything changed!"
+ },
+ "professor-amused-playful": {
+  "file": "wav/professor-amused-playful.wav",
+  "text": "Oh, you think better rules would fix it? I love that confidence. Okay. Let's make a little bet, shall we?"
+ },
+ "professor-curious-mystery": {
+  "file": "wav/professor-curious-mystery.wav",
+  "text": "Now here is the strange part. Nobody told it the rules of grammar. Nobody. So how does it know? Let's find out."
+ },
+ "professor-warm-welcoming": {
+  "file": "wav/professor-warm-welcoming.wav",
+  "text": "Good question. Honestly, that is exactly the question I hoped someone would ask today. Come a little closer, let me show you something."
+ },
+ "professor-arc-urgent-frustrated-relieved": {
+  "file": "wav/professor-arc-urgent-frustrated-relieved.wav",
+  "text": "Okay, okay, the bot crashed again, let's look at it right now. No, no, that's not it either. Why does it keep doing this? Oh. There it is. One missing rule. And that is exactly why we stopped writing rules."
+ },
+ "professor-calm-teaching": {
+  "file": "wav/professor-calm-teaching.wav",
+  "text": "Let's take this one step at a time. A model reads your sentence, looks at every word, and makes one careful guess about what comes next. That's all it does. And it does it very, very well."
+ }
+}
