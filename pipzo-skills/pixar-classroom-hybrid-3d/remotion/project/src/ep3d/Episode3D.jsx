@@ -21,8 +21,8 @@ import PTP from './ptpatch.json';
 
 const DBG = getInputProps() || {};
 const FPS = 30;
-// Character colours (series constants): Professor = green neon, Emily = violet neon.
-export const COL = { P: '#2DD4BF', S: '#B57BFF' };
+// Character colours (series constants): Professor = teal-green neon, Emily = pink neon (approved Episodes 2-4).
+export const COL = { P: '#2DD4BF', S: '#F472B6' };
 const NAME = { P: 'PROFESSOR', S: 'EMILY' };
 
 const useFonts = () => {

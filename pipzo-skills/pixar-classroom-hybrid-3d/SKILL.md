@@ -49,7 +49,7 @@ This skill builds a complete 3D-format episode for any topic:
 - The last station's box stays up. It is the end frame pinned to the board.
 
 **Classroom bookends:** the same as the 2D skill (approved Episode 3 look).
-- **Captions:** the spoken word lights up green `#2DD4BF` for the Professor and violet `#B57BFF` for Emily, and Emily's lines carry an EMILY tag. Positions: 1235 in the classroom, **1590 in the 3D middle** (low, clear of the boxes), 1680 under a cold-open device, 1400 under the Follow card.
+- **Captions:** the spoken word lights up teal-green `#2DD4BF` for the Professor and pink `#F472B6` for Emily (as in Episodes 2–4), and Emily's lines carry an EMILY tag. Positions: 1235 in the classroom, **1590 in the 3D middle** (low, clear of the boxes), 1680 under a cold-open device, 1400 under the Follow card.
 - **Closing:** the Follow card over the classroom, with the robot blinking, Follow pulsing, and "Next · Episode N" with the next title. The last spoken line is the comment question.
 
 **Scope: 3D only.** For the 2D format (diagram middle with both portraits at the bottom), use `pixar-classroom-hybrid-2d`.
@@ -173,7 +173,7 @@ Compare with the approved preview (`references/video/combined/approved_neonbox_e
 1. **Boxes:** in front of the Professor, screen-left, top at his hand height. The neon is dimmed, not blazing. The box comes out of the floor, then the cap lands, then the models appear on their words, then it sinks as they walk on. The last box stays up.
 2. **Models:** real 3D (they show depth as they turn). They are never on the cap before it lands. Their name labels are readable, and they never cover a face.
 3. **Characters:** both full-body in frame through every walk and stop, never cut off at the frame edge. 3D lip sync at 99–100% match, with no pose jump visible at phone size.
-4. **Captions:** the spoken word green for the Professor and violet for Emily, at 1590 in the middle, clear of the boxes.
+4. **Captions:** the spoken word teal-green for the Professor and pink for Emily, at 1590 in the middle, clear of the boxes.
 5. **Pull-back:** the world's end frame shrinks onto the board smoothly.
 6. **Closing:** the Follow card over the classroom, the robot blinking, the comment question last.
 7. **Sound:**
