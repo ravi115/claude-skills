@@ -233,7 +233,7 @@ export const Episode3D = () => {
   const midO = t < P.t1 ? clamp((t - (P.t1 - 0.35)) / 0.35) : 1;
   const pullK = sm((t - PB.t0) / (PB.t1 - PB.t0));
   const following = t > CFG.follow.t0 - 0.05;
-  const capTop = punch ? 1235 : inMid && t < PB.t0 ? 1590 : following ? 1400 : shot.kind === 'device' ? 1680 : 1235;   // 1590 in the 3D middle: low, clear of the boxes
+  const capTop = punch ? 1720 : inMid && t < PB.t0 ? 1590 : following ? 1720 : shot.kind === 'device' ? 1680 : 1720;   // classroom 1720: the chest band, never on a face; 3D middle 1590: below the feet
   const renderShot = (s) => (s.kind === 'device' ? <ColdOpen t={t} /> : s.kind === 'mw' || s.kind === 'pt' ? <Plate s={s} t={t} board={board(s)} /> : <CloseUp s={s} t={t} />);
   const M0 = CFG.meta;
   return (
