@@ -9,7 +9,7 @@ _fa.BAND, _fa.BANDS, _fa.PEN = 45, 90, 0.01  # approved lip-sync alignment windo
 from forced_align import env, tokens, dtw
 from lipsync_audio import VMAP
 # usage: python3 lipsync_drive.py [cfg.json] [out visnat.json]   (defaults: the 2D composition in the Remotion project)
-CFG = sys.argv[1] if len(sys.argv) > 1 else os.path.join(EP_SRC, 'cfg2.json')
+CFG = sys.argv[1] if len(sys.argv) > 1 else os.path.join(EP_SRC, 'cfg.json')
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(EP_SRC, 'visnat.json')
 FPS_IN, FPS = 100, 30
 # relative jaw opening per phoneme (1 = widest "ah")

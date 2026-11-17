@@ -1,7 +1,7 @@
 # viseme/blink/gaze tracks for Episode 2 (same algorithm as ep1/vis/track.py v2)
 import os, sys; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from paths import *
 import json, re, random, subprocess, numpy as np, cmudict
-D=cmudict.dict(); C=json.load(open(EP_SRC+'/cfg2.json'))
+D=cmudict.dict(); C=json.load(open(EP_SRC+'/cfg.json'))
 V=['AH','EE','OH','OO','FV','L']; PM={}
 for p in 'AA AE AH AY AW'.split(): PM[p]=('AH',1.0)
 for p in 'EH EY IH IY Y'.split(): PM[p]=('EE',0.95)
@@ -67,5 +67,5 @@ for who in ['P','S']:
     gz=[];t=0;rng=(6,3) if who=='P' else (5,3)
     while t<C['total']: gz.append([round(t,2),round(rnd.uniform(-rng[0],rng[0]),1),round(rnd.uniform(-rng[1],rng[1]*0.6),1)]); t+=rnd.uniform(0.7,2.2)
     sched[who]=dict(blink=bl,gaze=gz)
-json.dump(dict(V=V,w=out,s=sched),open(EP_SRC+'/vis2.json','w'),separators=(',',':'))
+json.dump(dict(V=V,w=out,s=sched),open(EP_SRC+'/vis.json','w'),separators=(',',':'))
 print('ok',N)

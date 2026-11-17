@@ -54,9 +54,9 @@ def build(cfg, in_dir):
         out[who]=[[1 if j==s else 0 for j in range(6)] for s in seq]
     return out
 if __name__=='__main__':
-    C=json.load(open(EP_SRC+'/cfg2.json'))
-    out=build(C,WORK+'/in'); V=json.load(open(EP_SRC+'/vis2.json')); V['w']=out
-    json.dump(V,open(EP_SRC+'/vis2.json','w'),separators=(',',':'))
+    C=json.load(open(EP_SRC+'/cfg.json'))
+    out=build(C,WORK+'/in'); V=json.load(open(EP_SRC+'/vis.json')); V['w']=out
+    json.dump(V,open(EP_SRC+'/vis.json','w'),separators=(',',':'))
     for who in 'PS':
         s=np.array([r.index(1) if 1 in r else -1 for r in out[who]]); talk=(s>=0).sum()
         ch=(np.diff(s)!=0).sum(); print(who,'open frames',talk,'changes/s while talking',round(ch/(max(1,talk)/30),1),'shape mix',np.bincount(s[s>=0],minlength=6))

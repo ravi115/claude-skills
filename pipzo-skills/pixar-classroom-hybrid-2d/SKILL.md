@@ -1,210 +1,178 @@
 ---
 name: "pixar-classroom-hybrid-2d"
-description: "Build a Pipzo Pixar-classroom 2D hybrid reel (HD classroom, Remotion lip sync, diagram middle with both portraits at the bottom), as in LLM-GPT2 Episodes 2-3."
+description: "Build a Pipzo Pixar-classroom 2D hybrid reel (HD classroom, Remotion lip sync, diagram middle with both portraits at the bottom), exactly like the approved LLM-GPT2 Episode 3."
 ---
 
 # Pixar Classroom Hybrid 2D
 
-This skill builds a complete 2D episode for any new topic. It reproduces the approved LLM-GPT2 Episode 2 ("Why 'Large'?") and uses the bottom-portrait middle from Episode 3:
-- classroom opening and closing from HD stills
-- push-in into the pink chalk object
-- flat diagram middle (with glow and slight tilt effects) and **both portraits talking at the bottom**
-- pull-back, Remember card, Follow card
-- captions, cover and caption files
+This skill builds a complete 2D episode for any topic. It looks and moves exactly like the approved **LLM-GPT2 Episode 3** (`Output/LLM-GPT2/LLM-GPT2_episode_3/LLM-GPT2_episode_3.mp4`):
+- an optional cold open on a phone or laptop
+- the HD classroom with close-ups, and a push-in into the pink chalk object
+- the diagram middle, with **both portraits talking at the bottom**
+- the pull-back that pins the end frame onto the board
+- the closing **Follow card over the classroom**, with the blinking Pipzo robot, ending on a **comment question**
+- neon word captions
 
-Lip sync is the **frozen Remotion lip sync v1**. It uses no ElevenLabs credits.
+Lip sync is the frozen Remotion lip sync v1, so voices and lip sync cost no credits.
 
-## Scope: 2D only (hard rule)
-This skill **never** builds a 3D episode, whatever the script or brief says. "3D" here means:
-- characters walking or standing in a 3D space
-- a 3D room or world, or a three.js / WebGL scene
-- ideas rising from a 3D floor
-- re-sequenced walking/talking character clips
+## The rule that matters most: the template is locked
+`remotion/project/src/episode/Episode.jsx` and `src/episode/lib/` are the approved Episode 3 look. **Never edit them for an episode, and never write a new episode composition.** Per episode you change only:
+1. `$PIPZO_WORK/episode.json`: the episode file (format below).
+2. `src/episode/content/Board.jsx`: the chalk drawing, the pink handoff object (`DIAL`) and the end-frame crop (`CROP`).
+3. `src/episode/content/Middle.jsx`: the diagram scenes, cued to spoken words. It must export `Middle` and `END_T`.
+4. `src/episode/content/ColdOpen.jsx`: the screen content of the cold-open phone or laptop. The frames come from `lib/Devices.jsx`.
 
-If the script asks for any of these:
-1. Do not build it with this skill, and do not invent a 3D version from these files.
-2. Tell the user the script calls for the 3D format and that this skill is 2D only. Recommend the separate `pixar-classroom-hybrid-3d` skill.
-3. Offer to build the episode in the 2D format instead. Continue in 2D only if the user agrees.
+The shipped `content/` files and `examples/ep3/episode.json` are Episode 3. Use them as the worked example.
 
-The only "3D" this skill allows is the flat glow look of the diagram middle (`Tilt`, `Bar3D`, `Glass`). These are CSS effects on 2D cards, not a 3D scene.
+**What the template always does (cannot be switched off):**
+- **Both portraits in the middle:** Professor left 10, Emily left 480, size 470. The speaker is at full brightness and the other at 72%. They hide only while a punch-in close-up fills the screen.
+- **Captions:** the word being spoken lights up in the speaker's neon colour. Professor is green neon `#2DD4BF`; Emily is violet neon `#B57BFF`, and her lines carry an EMILY tag. Positions: 1235 in the classroom, 1300 in the middle, 1680 under a cold-open device, 1400 under the Follow card.
+- **Pull-back:** the end frame holds, then shrinks onto the board over 1.6 s while the classroom fades back around it. It stays on the board until the end.
+- **Closing:** the Follow card sits over the classroom (wide shot, diagram on the board). The robot blinks, Follow pulses, and the card shows "Next · Episode N" and the next title. The last spoken line is the comment question.
+- **Header:** "SERIES · EP N", progress bar, and @pipzo.ai.
+- **Audio:** the mix plays inside the composition, so the render comes out with sound.
 
-## Skill folder
-Everything lives in `~/Documents/AI Video Editor/Skills/pixar-classroom-hybrid-2d/`. The folder map is in `README.md`.
-- `remotion/project/`: the Remotion project. The composition is `Ep2` in `src/llm2/`. Fonts, plates, busts and mouth patches are in `public/`.
-- `remotion/lipsync/`: lip-sync calibration and rules (shared, professor, emily).
-- `python/`: the build pipeline. Paths come from `PIPZO_WORK` (episode folder) and `PIPZO_REMO` (Remotion project), never from a fixed machine.
-- `references/`: photos, small video samples and audio. Approved targets are in `references/video/combined/`.
+**Switches in episode.json:** the banner (title card in the first 2.8 s), the Remember card, the "Following ✓" tap, and the @pipzo.ai handle.
 
-Also on the Mac:
-- Full approved videos: `Output/LLM-GPT2/LLM-GPT2_episode_2/`, `_episode_3/`.
-- Book: `Requirements/LLM-GPT2/Build-a-Large-Language-Model-From-Scratch.pdf`.
-- Scripts: `Requirements/LLM-GPT2/episode-NN-*/script.md`, index `EPISODE-INDEX.md`.
+**Scope: 2D only.** This skill never builds a 3D episode (characters walking in a 3D world, three.js scenes, ideas rising from a floor). If the script asks for 3D, say this skill is 2D only and point to `pixar-classroom-hybrid-3d`. Offer the 2D format instead.
 
-## Guardrails (read before any generation)
+## Guardrails
+- **Voices:** made with the `pixar-voice-cloning` skill (Kaggle, free). Voice Studio is retired and is not used.
+- **ElevenLabs:** not used for voices. Use it only for something Remotion truly cannot do, with a credit plan first and at most 10,000 credits per episode. Above that, ask the user. Never retry a failed generation.
+- **Visuals:** everything is drawn in Remotion. No generated images or video without a credit estimate and the user's approval.
+- **Publishing:** never post or publish without the user's explicit go-ahead.
 
-**Voices: Voice Studio only.**
-- Generate every line with the local Voice Studio tool (`voicestudio__generate_speech` via the remote-devices bridge).
-  - Professor profiles: `PB-*` (calm-teaching, curious-mystery, urgent-warm, confident-clear, excited-energetic, warm-welcoming, thoughtful-reflective, serious-slow, relieved-satisfied, frustrated-tired) and `X-prof-*`.
-  - Emily profiles: `emily-*` and `X-emily-*`.
-  - Pick the profile whose emotion matches the line's feeling tag.
-- Run calls one at a time, never more than 3–4 in parallel.
-- An 80 s bridge timeout still writes the file. Find it with `ls -t ~/Documents/AI Video Editor/*.wav` and check it with `voicestudio__transcribe`.
-- Memory errors: wait, then retry the same call.
-- Transcribe each line with `voicestudio__transcribe` to get `words.json`. It's free.
-- If the lines run long, a ×1.04 speed-up is allowed. It was used in Episode 4.
+## Setup (any machine)
+- **Tools:** Node 18+, Python 3.10+, ffmpeg and ffprobe on the PATH.
+- **Python:** `pip install numpy cmudict faster-whisper`.
+- **Remotion project:** in `remotion/project/`, run `npm install`.
+  - Versions are pinned to **4.0.544** to match the deployed Lambda function.
+  - If the Lambda function is a different version, set every `remotion`/`@remotion/*` entry to that exact version and reinstall. The `remotion-lambda-readiness` skill checks this.
+- **Paths:** `export PIPZO_WORK=<episode work folder>`. `PIPZO_REMO` defaults to this skill's `remotion/project`. The scripts find their own folder, wherever the skill is installed.
 
-**ElevenLabs is a last resort, never the first attempt.**
-- Use it only if Voice Studio does not work at all, or for something Remotion truly cannot do.
-- **Budget: up to 10,000 credits per episode.**
-  1. Plan first. List every generation with its credit estimate (`estimate_only`) and the total.
-  2. Spend only if the total is well under 10,000.
-  3. If the episode would need more than 10,000, stop and get the user's approval first.
-- **Never repeat a generation because it failed.** A failed run is still charged. Report it and ask before trying again.
-- Everything visual is done in Remotion: lip sync, motion, diagrams, captions. No generated video and no new images without a credit estimate and approval.
+## Per-episode steps
+1. **Script.**
+   - Read the episode `script.md` and the book chapter, and check every number against the book.
+   - Write `$PIPZO_WORK/episode.json`: lines in order, with voice, shot, beat windows and silences, the push and pull, sound cues, motions, Follow and the cards.
+   - Pick the pink handoff object.
+   - Show the user the line table and the credit plan (normally 0), and get approval.
+2. **Voices** with the `pixar-voice-cloning` skill.
+   - Its episode table is the `id | voice | text` of each line in episode.json.
+   - Its `postprocess.py` writes `$PIPZO_WORK/in/<ID>.mp3`.
+3. **Words.** Run `python3 python/words.py`. It writes `words.json`, with word timings from Whisper and the script's own words. Re-voice any line it flags.
+4. **Build**, from `python/`, in this order:
+   1. `forced_align.py`
+   2. `build_episode.py`: writes `cfg.json` and `audio_plan.json`, and prints every line, shot, drift and warning. Fix every ERROR. Read every WARN aloud to yourself and decide.
+   3. `track_eyes.py`
+   4. `lipsync_drive.py`
+   5. `mix_plan.py`: writes `mix.wav` and copies it into `public/llm2/` for the render.
+5. **Content.** Write `content/Board.jsx`, `content/Middle.jsx` and, if there's a cold open, `content/ColdOpen.jsx`.
+6. **Stills** at every shot change, plus the QA moments below. Fix, then render.
+7. **Render, QA, review, deliver**, in that order (sections below).
 
-**Never post or publish** without the user's explicit go-ahead.
+## The episode file (`$PIPZO_WORK/episode.json`)
+The `//` comments below are explanations only. Real JSON has no comments.
+```json
+{
+  "series": "Large Language Models, GPT-2", "ep": 5, "title": "Pretrain, Then Finetune",
+  "handle": true,
+  "banner": null,                        // or {"sub": "subtitle"} for a title card at 0-2.8 s
+  "remember": null,                      // or {"a": "line one", "b": "line two"}; needs a line with "role": "remember"
+  "follow": {"next_n": 6, "next_title": "Emergent Abilities", "tap": false},   // tap: show the "Following ✓" tap
+  "push": {"after": "P3", "zoom": 5.0},  // push into the pink object after this line; the middle starts with the next line
+  "pull": {"after": "P4", "hold": 2.0},  // pull back after this line (end frame held 2 s) ...
+                                         // ... or {"line": "P13", "at": 0.9}: pull back 0.9 s into this line
+  "lines": [
+    {"id": "E1", "who": "S", "voice": "emily-surprised-sharp-turn", "text": "...", "shot": "device", "window": [0, 6]},
+    {"id": "P1", "who": "P", "voice": "PB-curious-mystery", "text": "...", "shot": "wide", "cuts": [["school", "cuP"]]},
+    {"react": "cuS", "dur": 1.1},
+    {"id": "M6", "who": "P", "voice": "PB-serious-slow", "text": "...", "motion": [["nod", "language"]]},
+    {"id": "E3", "who": "S", "voice": "emily-challenging-sharp", "text": "...", "gap": 2.0, "punch": true},
+    {"id": "P6", "who": "P", "voice": "PB-curious-mystery", "text": "Next episode: ...", "shot": "wide", "role": "next"},
+    {"id": "P7", "who": "P", "voice": "PB-warm-welcoming", "text": "... what would it be? Comment below.", "shot": "wide", "role": "ask"}
+  ],
+  "sound": [
+    {"type": "tick", "at": "E1", "offset": 0.35, "every": 0.45, "n": 6},
+    {"type": "bed", "from": "P1", "to": "E2", "vol": 0.16},
+    {"type": "nomusic", "from": "M6", "to": "M6"},
+    {"type": "ding", "at": "M7:download"},
+    {"type": "lift", "from": "P5", "to": "E5"}
+  ]
+}
+```
 
-## Setup (any machine; nothing comes from a previous workspace)
-1. **Tools:** Node 18+, Python 3.10+, ffmpeg and ffprobe on the PATH.
-2. **Remotion project:** run `npm install` in `remotion/project/`.
-   - Versions are pinned to Remotion **4.0.543**, including `@remotion/lambda`.
-   - The Lambda function must be the same version. If the deployed function is a different version, change every `remotion`/`@remotion/*` entry in `package.json` to that exact version and install again.
-3. **Python:** `pip install numpy cmudict` (plus `opencv-python-headless Pillow` only for recalibration).
-4. **Paths:**
-   - `export PIPZO_WORK=<episode folder>` for voices, `words.json` and build outputs.
-   - `PIPZO_REMO` defaults to `remotion/project` inside this skill.
-5. **Voice Studio** must be reachable as an MCP server in the session:
-   - the Claude desktop app's local `voicestudio`, or the same server added to Claude Code with `claude mcp add`.
-   - If it isn't, stop and tell the user. Do not fall back to ElevenLabs without following the guardrails.
+**Line fields**
+- `shot`, outside the middle:
+  - `wide`: the talk plate
+  - `point`: the Professor pointing at the board
+  - `cuP` / `cuS`: close-ups
+  - `device`: the cold open
+  - Leave it out for middle lines.
+- `cuts`: change the shot at a word inside the line.
+- `gap`: the pause before the line. Default 0.3 s; for a fixed silence (e.g. 2 s), set the gap.
+- `window`: the script's time window. The line is held back until 1 s before the window opens, and any drift over 1 s is reported.
+- `at`: the earliest start.
+- `punch`: middle lines only. A full-screen close-up of the speaker for that line, for a big reaction.
+- `motion`: small head moves on close-ups and portraits: `nod`, `tilt`, `lean`, `bounce`, `shake`, `pop`. Write `["nod", "word"]` to start at a word, or `["tilt"]` for the line start. These are code moves only; there are no new poses (crossed arms, gestures).
+- `role`:
+  - `next`: the next-episode line. The Follow card appears here.
+  - `ask`: **required, and the last line**. The comment question that ends the episode.
+  - `remember`: the line the Remember card sits on.
+- `{"react": "cuS", "dur": 1.1}`: a silent reaction shot (grin, laugh).
 
-## Per-episode steps (in order)
-1. **Script.** Read the episode `script.md` and the book chapter, and check every number against the book. Write the line table:
-   - P1 hook (≤7 s, motion in frame 1)
-   - P2 stake ("We're building a large language model from scratch, piece by piece, so you can build agentic AI apps yourself. Today is step N: …")
-   - G1 Emily question
-   - P3 handoff ("… Watch this one [object].")
-   - MA and MB, the middle long takes
-   - G2 Emily insert
-   - P13 takeaway
-   - G3 Emily says it back
-   - P14 Remember
-   - P15 "Next class: … Follow me, so you don't miss episode N+1."
+**Sound cues**
+- `bed` and `lift`: background music in a range.
+- `nomusic`: no music in that range, even if a bed overlaps.
+- `tick`: ticking (`every`, `n`, `offset`).
+- `ding`: a ding.
+- Times are a line id (its start, or its end for a `to`), `"ID:word"`, or `"ID:end"`.
+- Room tone and the closing sting are always on.
 
-   Pick the pink chalk handoff object. Show the table and the credit plan (normally 0 credits), and get approval.
-2. **Voices.** Generate in Voice Studio, one file per line. Save them as `$PIPZO_WORK/in/P1.mp3 … P15.mp3, MA.mp3, MB.mp3, G1–G3.mp3`, and copy them to `remotion/project/public/llm2/`.
-3. **Words.** From the Voice Studio transcripts, write `$PIPZO_WORK/words.json` as `{line: [{raw, t0, t1}]}`. Drop entries that start with `[`.
-4. **Build**, in this order, from `python/`:
-   1. `forced_align.py`: phoneme alignment, giving `words_fa.json` for captions and cues.
-   2. `build2.py`: timeline, giving `cfg2.json`.
-   3. `track_e2.py`: blinks and eye saccades, giving `vis2.json`.
-   4. `lipsync_drive.py`: **mouths**, giving `visnat.json`.
-   5. `mix2.py`: mix at −14 LUFS.
-5. **Edit the episode content** (next section). Render stills at every shot change, fix them, then render the full video.
-6. **QA and deliver** (sections below).
+**Shots the builder enforces**
+- The push-in always starts from the pointing plate.
+- The first shot after the pull-back is the wide plate with the diagram on the board.
+- Everything from the `next` line on is the wide plate under the Follow card.
+- It warns about any shot over 6 s.
 
-## What changes per episode (and nothing else)
-- `build2.py`:
-  - the shot cut words: `wt('P1','tiny')`, `wt('P2','so')`, `wt('P2','today')`, `wt('P3','watch')`, changed to words from the new lines
-  - `remember` a/b text
-  - `follow` n and title
-- `Ep2.jsx`:
-  - `EP`, `TITLE`, banner subtitle
-  - `BoardDrawing`: chalk content, KalamX font, chalk `#F4F1E6`, handoff object in pink `#F472B6`
-  - `DIAL`: the pink object's point in the 1000x560 board canvas, under the professor's finger in the pointing plate
-- `Middle2.jsx`: new scenes.
-  - Cue every element to a spoken word with `cue(line, word, k)`, and add the cue names to `T`.
-  - Keep `Stage`, `SectionChip`, `Glass`, `Tilt`, `Bar3D`, `Dial`, `Pill`, `GlowText`.
-  - The last scene is the save-worthy end frame (`Agents` slot, `END_T`).
-- Cover props, plus `caption.txt`, `story.txt`, `handoff.txt`.
+## Render (AWS Lambda, with sound)
+From `remotion/project/`:
+1. `npx remotion lambda sites create src/episode/index.jsx --site-name=pipzo-classroom-2d`. Re-run after every code or asset change.
+2. `npx remotion lambda render <serve-url> Episode --codec=h264 --crf=14 --gl=swangle --frames-per-lambda=40`.
+   - Don't use `--muted`: the mix is in the composition.
+   - The output lands in the Remotion bucket. AWS credentials and region come from the environment.
 
-## Locked rules
+**Stills** are local and fast: `npx remotion still src/episode/index.jsx Episode still.png --props='{"t":SECONDS,"muted":true}'`. A local render is the fallback only: `npx remotion render src/episode/index.jsx Episode video.mp4 --codec=h264 --crf=14`.
 
-**Lip sync: frozen v1, never blend mouths** (`remotion/lipsync/README.md`)
-- `lipsync_drive.py` produces **one mouth state per frame**: closed, FV, OO, EE, L, OH or AH.
-  - Phonemes are forced-aligned to the voice (window ±0.45 s).
-  - Openness is quantile-mapped to the real mouth movement measured from the ElevenLabs lip-sync clips. Calibration is in `remotion/lipsync/{professor,emily}/calibration.json`.
-  - The mouth leads the sound by 40 ms.
-  - Fast speech (≥5 syllables/s) holds each mouth ≥3 frames; slow and medium speech hold ≥2.
-  - Lips close on M/B/P and between words.
-  - Emily's rules are frozen.
-  - Professor: every vowel gets a visibly open mouth (his moustache hides small mouths), and a short syllable merges into the more open neighbour. It is never swallowed.
-- The renderer (`rig/natMouth.js`, `rig/Face.jsx`, `PlateFace` in `Ep2.jsx`) draws exactly **one real drawn mouth patch at opacity 1**. No synthetic in-betweens and no crossfades; they cause ghosting.
-- Wide plates have only AH, EE, OH and OO, so FV maps to EE and L maps to OH.
-- The same code drives the classroom close-ups, the wide plates and the bottom portraits.
-- Blinks happen every 2.4–4.8 s and eye saccades every 0.7–2.2 s (`track_e2.py`).
+## QA before the user sees it
+Download the render and compare it with Episode 3 (`references/video/combined/qa-episode-3/`, frames named by moment). Check each of these, and fix anything that fails:
+1. **Middle:** both portraits visible at the bottom, both labelled, and the speaker brighter.
+2. **Captions:** the spoken word lights up green for the Professor and violet for Emily. Emily's lines have the EMILY tag. Captions never cover a face or the board writing.
+3. **Push-in:** it lands on the pink object, and the middle opens on the same object.
+4. **Pull-back:** the end frame shrinks onto the board with no jump or pop. Check stills at pull start +0.3, +0.8 and +1.4 s. The end frame never covers the Professor's head.
+5. **Closing:** the Follow card is over the classroom with the diagram on the board. The robot blinks (check two frames 0.1 s apart at a blink). "Next · Episode N" shows the next title. The last spoken line is the comment question.
+6. **Mouths:** 24 consecutive frames of a close-up and of a portrait during fast speech. One solid mouth per frame, closed on m/b/p, and the Professor never closed while his voice sounds.
+7. **Sound:** voices clear over music, beds only where the script allows, the sting on the last frame, and −14 LUFS.
+8. **Length:** 90–150 s.
 
-**Classroom (crisp, no generated video)**
-- Plates are `talk_hd.jpg` and `point_hd.jpg` (2160x3840, drawn at 1080x1920). Their mouth and blink patches are `mw_*` and `pt_*`, with plate coordinates halved.
-- Close-ups use HD busts via `rig/Face.jsx` (size 1400, left −170, top 560) over a blurred `cu_bgP.jpg` / `cu_bgS.jpg`.
-  - Emily is mirrored to face the professor.
-  - Grade: `sepia(0.16) saturate(1.1) brightness(1.03) contrast(1.03)`.
-- Cut every 3–5 s between wide, close-up and pointing shots.
-  - Every shot has a slow push: zoom 1.0→1.15–1.4, pivot about [640,600].
-  - No static shot lasts over 4 s.
-- Board quads:
-  - talk: `[[500,40],[1080,0],[1080,985],[500,980]]`
-  - point: `[[498,30],[1080,0],[1080,1022],[500,1018]]`
-  - Chalk sits in board v 0.40–0.72. The diagram after the pull-back sits in v 0.16–0.78.
+## Review and delivery (in this order)
+1. **Review.** Send the user the rendered video (download link or file) with a one-line QA summary. Wait.
+2. **Approve.** Only after the user replies "approve":
+   1. Put the deliverables in `Output/<Series>/<Series>_episode_N/`:
+      - `<Series>_episode_N.mp4`
+      - `cover.jpg`, from `src/cover`
+      - `caption.txt`, through the instagram-agent `ig-caption` linter until READY
+      - `story.txt` and `handoff.txt`
+   2. Promote to S3 `pipzo-reels` and to R2 with the Mac script: `python3 upload_to_r2.py --target both instagram "Output/<Series>/<Series>_episode_N"`.
+3. **Never post** without the user's go-ahead.
+4. **Report** the credits used (normally 0).
 
-**Bottom portraits in the middle (Episode 3 layout)**
-- Both portraits are on screen together, at size 470, glowing in their neon colour.
-  - Professor: teal `#2DD4BF`, left 10.
-  - Emily: pink `#F472B6`, **left 480**. That's 40 px more space than Episode 3, and she stays clear of the Instagram buttons.
-- Labels read PROFESSOR and EMILY.
-- The active speaker is at full brightness and the other at 72%. Both bob gently while talking.
-- They fade in after the push-in and out before the pull-back.
-
-**Handoffs**
-- Push-in: 1.45 s, zoom 6 into the pink object. The middle opens on the same object at (450, 860).
-- Final diagram: holds 2 s, then a 1.6 s pull-back. The diagram stays on the board for the closing shots.
-
-**Middle look**
-- Classroom Green Dark Keynote with glow and tilt effects (`llm1/theme.js`, `llm1/fx.jsx`). These are 2D effects only (see Scope).
-  - Colours: ground #22312B, orange #F97316 for emphasis, pink #F472B6 for the handoff, teal #2DD4BF, yellow #FACC15 for numbers only, green for tokens.
-  - ≤8 words on screen. Content column x 70–830, y 330–1240. Keep the right 230 px clear.
-- Rotate one variation per episode: the `Stage` floor-grid colour, the glow accent, or the scene entrance. Log which one was used, and don't repeat it within 3 episodes.
-
-**Overlays (fixed positions)**
-- Header "LARGE LANGUAGE MODELS, GPT-2 · EP N" at top 196, progress bar at 232, @pipzo.ai on the right.
-- Banner from 0–2.8 s at top 1020.
-- Remember card: left 70, top 975, chalk 46 px.
-- Follow card: top 640, with the blinking robot (`BlinkBot`). It taps "Following ✓" after the last word.
-- Captions:
-  - Positions: top 1235 in the classroom, 1270 in the middle, 1400 under the Follow card.
-  - Emily's lines get her tag.
-  - Nothing covers a face or the board writing. Covering hands or trousers is fine.
-
-## Render, audio, encode
-- **Render on AWS Lambda (default).** Run from `remotion/project/`, after the episode's JSON and voices are in `src/llm2` and `public/llm2`:
-  1. `npx remotion lambda sites create src/llm2/index.jsx --site-name=pipzo-classroom-2d`. Re-run after every code or asset change; it prints the serve URL.
-  2. `npx remotion lambda render <serve-url> Ep2 --codec=h264 --crf=14 --muted`.
-     - It prints the S3 output. Download it as `video.mp4`.
-     - AWS credentials and region come from the environment, as set up for the user's Lambda function.
-- **Local fallback:** `npx remotion render src/llm2/index.jsx Ep2 video.mp4 --codec=h264 --crf=14 --muted`.
-- **Stills for QA** are always local and fast: `npx remotion still src/llm2/index.jsx Ep2 still.png --frame=N`.
-- The video renders muted. The audio is added in the encode step from `mix.wav`.
-- Mix (`mix2.py`):
-  - voices at line starts
-  - room tone (`references/audio/music/classroom_roomtone.mp3`), quieter in the middle
-  - closing music (`closing_sting.mp3`) ending on its sting
-  - two-pass loudnorm to −14 LUFS, TP −1.5
-- Encode: `-vf scale=in_range=pc:out_range=tv,format=yuv420p -c:v libx264 -profile:v high -preset slow -crf 15 -color_primaries bt709 -color_trc bt709 -colorspace bt709 -r 30 -c:a aac -b:a 256k -movflags +faststart`.
-
-## QA before delivery
-- **Stills at every shot change:** no clipping, nothing on a face, board text readable, both portraits fully in frame.
-- **Mouth strips:** 24 consecutive frames of a close-up and of a bottom portrait during a fast phrase.
-  - One clean, solid mouth per frame, with no second mouth showing through.
-  - Closed on m/b/p.
-  - The Professor is never closed while his voice sounds.
-- **Captions** match the voice. **Total length** 90–150 s.
-
-## Delivery
-- Deliver to `Output/LLM-GPT2/LLM-GPT2_episode_N/`:
-  - `LLM-GPT2_episode_N.mp4`
-  - `cover.jpg`: `src/cover`, props `ep`, `topic`, `bg` = blurred talk plate, `h1` "LARGE LANGUAGE", `s1` 118, `h2` "MODELS · GPT-2", `s2` 118
-  - `caption.txt`: through the instagram-agent `ig-caption` linter until READY, with one ask, ≤5 hashtags, and credit to Raschka/Manning
-  - `story.txt`: 3 frames
-  - `handoff.txt`
-- Copy the build script to `Requirements/LLM-GPT2/episode-NN-*/script-v2-build.md`.
-- Large files: `SendUserFile` first, then `device_commit_files` by fileUuid.
-- Report credits used (normally 0). Never post without the user's go-ahead.
+## Locked rules (reference)
+- **Lip sync (frozen v1)** (`remotion/lipsync/README.md`):
+  - One real drawn mouth per frame, never blended.
+  - Forced alignment, mouth 40 ms ahead of the sound, holds ≥3 frames in fast speech.
+  - The Professor's vowels always open.
+  - Wide plates map FV to EE and L to OH.
+- **Classroom:** HD plates `talk_hd.jpg` / `point_hd.jpg` with `mw_*` / `pt_*` mouth patches. Close-ups use the HD busts, with Emily mirrored. Every shot has a slow push.
+- **Middle look:** Classroom Green Dark Keynote (`llm1/theme.js`, `llm1/fx.jsx`).
+  - Colours: orange for emphasis, pink for the handoff object, yellow for numbers.
+  - ≤8 words on screen. Content inside x 70–830 and y 330–1240. The right 230 px kept clear.

@@ -1,17 +1,29 @@
+// LOCKED EPISODE TEMPLATE. Do not edit per episode.
+// Everything an episode changes lives in content/ (Board, ColdOpen, Middle) and in cfg.json, built from episode.json.
+// Approved reference: LLM-GPT2 Episode 3. This file owns, for every episode:
+//   classroom plates and close-ups with the frozen lip sync, the push-in, BOTH bottom portraits in the middle,
+//   the pull-back that pins the end frame onto the board, neon word captions, the closing Follow card over the
+//   classroom with the blinking Pipzo robot, the header, banner, Remember card, character motions and the audio.
 import React, { useEffect, useState } from 'react';
-import { AbsoluteFill, Img, staticFile, useCurrentFrame, delayRender, continueRender, getInputProps } from 'remotion';
+import { AbsoluteFill, Audio, Img, staticFile, useCurrentFrame, delayRender, continueRender, getInputProps } from 'remotion';
 import { C, F, clamp, sm, ap, lerp, backE } from '../llm1/theme.js';
 import { Face, blinkAt } from '../rig/Face';
-import { Middle2, END_T } from './Middle2.jsx';
-import CFG from './cfg2.json';
-import VIS2 from './vis2.json';
-import NAT from './visnat.json'; // one mouth state per frame per speaker, from python/lipsync_drive.py
 import { natAt, mouthName } from '../rig/natMouth';
+import { mat3d, mapPt, lerpQ, DW, DH, DRAWQ, DIAGQ, FULLQ } from './lib/geometry.js';
+import { Middle, END_T } from './content/Middle.jsx';
+import { BoardDrawing, DIAL, CROP } from './content/Board.jsx';
+import { ColdOpen } from './content/ColdOpen.jsx';
+import CFG from './cfg.json';
+import VIS from './vis.json';
+import NAT from './visnat.json';
 import MWP from './mwpatch.json';
 import PTP from './ptpatch.json';
 
 const DBG = getInputProps() || {};
-const FPS = 30; const EP = 2; const TITLE = 'Why "Large"?';
+const FPS = 30;
+// Character colours (series constants): Professor = green neon, Emily = violet neon.
+export const COL = { P: '#2DD4BF', S: '#B57BFF' };
+const NAME = { P: 'PROFESSOR', S: 'EMILY' };
 
 const useFonts = () => {
   const [h] = useState(() => delayRender('fonts'));
@@ -21,65 +33,44 @@ const useFonts = () => {
   }, []);
 };
 
-/* ---- geometry ---- */
-const solve = (A, b) => { const n = b.length; const M = A.map((r, i) => [...r, b[i]]); for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(M[k][i]) > Math.abs(M[p][i])) p = k; [M[i], M[p]] = [M[p], M[i]]; for (let k = i + 1; k < n; k++) { const f = M[k][i] / M[i][i]; for (let j = i; j <= n; j++) M[k][j] -= f * M[i][j]; } } const x = Array(n).fill(0); for (let i = n - 1; i >= 0; i--) { let s = M[i][n]; for (let j = i + 1; j < n; j++) s -= M[i][j] * x[j]; x[i] = s / M[i][i]; } return x; };
-const homog = (w, h, q) => { const src = [[0, 0], [w, 0], [w, h], [0, h]]; const A = []; const b = []; for (let i = 0; i < 4; i++) { const [x, y] = src[i]; const [u, v] = q[i]; A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u); A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v); } return solve(A, b); };
-const mat3d = (w, h, q) => { const [a, bb, c, d, e, f, g, hh] = homog(w, h, q); return `matrix3d(${a},${d},0,${g},${bb},${e},0,${hh},0,0,1,0,${c},${f},0,1)`; };
-const mapPt = (w, h, q, x, y) => { const [a, b, c, d, e, f, g, hh] = homog(w, h, q); const z = g * x + hh * y + 1; return [(a * x + b * y + c) / z, (d * x + e * y + f) / z]; };
-const subQ = (q, u0, u1, v0, v1) => { const P = (u, v) => { const [tl, tr, br, bl] = q; const top = [lerp(tl[0], tr[0], u), lerp(tl[1], tr[1], u)], bot = [lerp(bl[0], br[0], u), lerp(bl[1], br[1], u)]; return [lerp(top[0], bot[0], v), lerp(top[1], bot[1], v)]; }; return [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)]; };
-const lerpQ = (q1, q2, k) => q1.map((p, i) => [lerp(p[0], q2[i][0], k), lerp(p[1], q2[i][1], k)]);
-const BQ = { mw: [[500, 40], [1080, 0], [1080, 985], [500, 980]], pt: [[498, 30], [1080, 0], [1080, 1022], [500, 1018]] };
-const DRAWQ = (k) => subQ(BQ[k], 0.04, 0.96, 0.40, 0.72);
-const DW = 1000, DH = 560, DIAL = [120, 330];
+/* ---- motions: small head moves from episode.json ("motion"), applied to close-ups and portraits ---- */
+const MOTION = {
+  nod: (u) => ({ dy: Math.sin(u * Math.PI * 2) * 14 * (1 - u), rot: 0, s: 1 }), // 0.7 s
+  tilt: (u) => ({ dy: 0, rot: 4 * Math.sin(Math.min(1, u * 1.6) * Math.PI / 2) * (u > 0.75 ? 1 - (u - 0.75) / 0.25 : 1), s: 1 }), // 1.6 s
+  lean: (u) => ({ dy: -12 * Math.sin(u * Math.PI), rot: 0, s: 1 + 0.04 * Math.sin(u * Math.PI) }), // 1.4 s
+  bounce: (u) => ({ dy: -Math.abs(Math.sin(u * Math.PI * 3)) * 16 * (1 - u), rot: 0, s: 1 }), // 1.0 s
+  shake: (u) => ({ dy: 0, rot: Math.sin(u * Math.PI * 4) * 3 * (1 - u), s: 1 }), // 0.9 s
+  pop: (u) => ({ dy: -10 * (1 - u), rot: 0, s: 1 + 0.05 * Math.sin(Math.min(1, u * 3) * Math.PI / 2) * (1 - u) }), // 0.8 s
+};
+const MDUR = { nod: 0.7, tilt: 1.6, lean: 1.4, bounce: 1.0, shake: 0.9, pop: 0.8 };
+const motionAt = (who, t) => {
+  let dy = 0, rot = 0, s = 1;
+  for (const m of CFG.motions || []) {
+    if (m.who !== who || t < m.t || t > m.t + MDUR[m.type]) continue;
+    const r = MOTION[m.type]((t - m.t) / MDUR[m.type]); dy += r.dy; rot += r.rot; s *= r.s;
+  }
+  return { dy, rot, s };
+};
 
-/* ---- chalk drawing on the board: a small model full of dials ---- */
-const chalk = { stroke: C.chalk, strokeWidth: 6, fill: 'none', strokeLinecap: 'round', opacity: 0.9 };
-const ChalkDial = ({ x, y, a, pink }) => (
-  <g transform={`translate(${x} ${y})`}>
-    <circle r="44" {...chalk} stroke={pink ? C.pink : C.chalk} strokeWidth={pink ? 8 : 6} />
-    <line x1="0" y1="0" x2={Math.sin(a) * 32} y2={-Math.cos(a) * 32} {...chalk} stroke={pink ? C.pink : C.chalk} strokeWidth="7" />
-    <circle r="6" fill={pink ? C.pink : C.chalk} />
-  </g>
+/* ---- board drawing and the pinned end frame ---- */
+const BoardOnQuad = ({ quad }) => (
+  <div style={{ position: 'absolute', left: 0, top: 0, width: DW, height: DH, transformOrigin: '0 0', transform: mat3d(DW, DH, quad) }}><BoardDrawing /></div>
 );
-const BoardDrawing = ({ quad }) => (
-  <div style={{ position: 'absolute', left: 0, top: 0, width: DW, height: DH, transformOrigin: '0 0', transform: mat3d(DW, DH, quad) }}>
-    <div style={{ position: 'absolute', left: 50, top: 6, fontFamily: F.chalk, fontWeight: 700, fontSize: 64, color: C.chalk, opacity: 0.92 }}>a small model</div>
-    <svg width={DW} height={DH} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
-      <rect x="40" y="120" width="620" height="300" rx="34" {...chalk} />
-      {[0, 1].map((r) => [0, 1, 2, 3].map((c) => <ChalkDial key={`${r}${c}`} x={120 + c * 150} y={190 + r * 140} a={[-0.8, 0.4, -0.2, 1.0, 0.9, -1.1, 0.3, -0.5][r * 4 + c]} pink={r === 1 && c === 0} />))}
-    </svg>
-    <div style={{ position: 'absolute', left: 690, top: 150, fontFamily: F.chalk, fontWeight: 700, fontSize: 50, color: C.chalk, opacity: 0.9, lineHeight: 1.2 }}>big ones:<br /><span style={{ color: '#ffcf8a' }}>175B</span><br />dials</div>
-  </div>
-);
-
-/* ---- the diagram end frame, pinned to the board after the pull-back ---- */
-const CROP = { x: 40, y: 300, w: 820, h: 960 };
 const DiagramOnQuad = ({ quad }) => (
   <div style={{ position: 'absolute', left: 0, top: 0, width: CROP.w, height: CROP.h, transformOrigin: '0 0', transform: mat3d(CROP.w, CROP.h, quad), overflow: 'hidden', borderRadius: 18, boxShadow: '0 0 0 6px rgba(139,94,60,0.9)' }}>
-    <div style={{ position: 'absolute', left: -CROP.x, top: -CROP.y, width: 1080, height: 1920 }}><Middle2 t={END_T} still /></div>
+    <div style={{ position: 'absolute', left: -CROP.x, top: -CROP.y, width: 1080, height: 1920 }}><Middle t={END_T} still /></div>
   </div>
 );
-const fitQuad = (q, padX = 0.06, padY = 0.05) => {
-  const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]); const x0 = Math.max(...[q[0][0], q[3][0]]), x1 = Math.min(q[1][0], q[2][0]), y0 = Math.max(q[0][1], q[1][1]), y1 = Math.min(q[2][1], q[3][1]);
-  const w = x1 - x0, h = y1 - y0; const s = Math.min((w * (1 - 2 * padX)) / CROP.w, (h * (1 - 2 * padY)) / CROP.h); const cw = CROP.w * s, ch = CROP.h * s; const cx = x0 + w / 2, cy = y0 + h * 0.46;
-  return [[cx - cw / 2, cy - ch / 2], [cx + cw / 2, cy - ch / 2], [cx + cw / 2, cy + ch / 2], [cx - cw / 2, cy + ch / 2]];
-};
-const DIAGQ = (k) => fitQuad(subQ(BQ[k], 0.0, 1.0, 0.16, 0.78), 0.07, 0.03);
-const FULLQ = [[CROP.x, CROP.y], [CROP.x + CROP.w, CROP.y], [CROP.x + CROP.w, CROP.y + CROP.h], [CROP.x, CROP.y + CROP.h]];
 
 /* ---- camera ---- */
 const zoomAt = (s, t) => { const K = s.zk; const r = t - s.t0; if (r <= K[0][0]) return K[0][1]; for (let i = 0; i < K.length - 1; i++) { const [a, sa] = K[i], [b, sb] = K[i + 1]; if (r <= b) return lerp(sa, sb, sm((r - a) / Math.max(0.01, b - a))); } return K[K.length - 1][1]; };
-const visAt = (who, t) => { const A = VIS2.w[who]; const f = t * 30; const i = Math.max(0, Math.min(A.length - 2, Math.floor(f))); const u = f - i; return A[i].map((x, j) => x * (1 - u) + A[i + 1][j] * u); };
+const visAt = (who, t) => { const A = VIS.w[who]; const f = t * 30; const i = Math.max(0, Math.min(A.length - 2, Math.floor(f))); const u = f - i; return A[i].map((x, j) => x * (1 - u) + A[i + 1][j] * u); };
 
-/* ---- HD classroom plate with mouth + blink patches ---- */
-const MWV = ['AH', 'EE', 'OH', 'OO'];
+/* ---- HD classroom plate with mouth + blink patches (frozen lip sync: one real mouth per frame) ---- */
 const PlateFace = ({ k, t }) => {
-  const w6 = visAt('P', t); const w = [w6[0] + w6[5] * 0.8, w6[1] + w6[4] * 0.6, w6[2], w6[3]];
-  const order = w.map((x, j) => [x, j]).sort((a, b) => a[0] - b[0]); const [b2, b1] = order.slice(-2);
-  const tot = Math.min(1, (b1[0] + b2[0]) * 1.35); const top = b1[0] / Math.max(1e-6, b1[0] + b2[0]);
   const PP = k === 'mw' ? MWP : PTP; const pre = k === 'mw' ? 'mw' : 'pt';
   const Pic = ({ v, o }) => { const [x0, y0, x1, y1] = PP[v].box; return <Img src={staticFile(`llm2/${pre}_${v}_patch.png`)} style={{ position: 'absolute', left: x0 / 2, top: y0 / 2, width: (x1 - x0) / 2, height: (y1 - y0) / 2, opacity: o }} />; };
-  const bl = blinkAt('P', t, VIS2.s);
+  const bl = blinkAt('P', t, VIS.s);
   return (<>
     {bl > 0.02 && <Pic v="BL" o={Math.min(1, bl * 1.25)} />}
     {(() => { const n = mouthName(natAt(NAT.w.P, t), true); return n ? <Pic v={n} o={1} /> : null; })()}
@@ -91,8 +82,8 @@ const Plate = ({ s, t, board }) => {
     <div style={{ position: 'absolute', inset: 0, transformOrigin: `${px}px ${py}px`, transform: `translate(${sway}px, 0) scale(${z})` }}>
       <Img src={staticFile(`llm2/${k === 'mw' ? 'talk' : 'point'}_hd.jpg`)} style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: 1920 }} />
       <PlateFace k={k} t={t} />
-      {board === 'drawing' && <BoardDrawing quad={DRAWQ(k)} />}
-      {board === 'diagram' && <DiagramOnQuad quad={DIAGQ(k)} />}
+      {board === 'drawing' && <BoardOnQuad quad={DRAWQ(k)} />}
+      {board === 'diagram' && <DiagramOnQuad quad={DIAGQ(k, CROP)} />}
     </div>
   );
 };
@@ -100,13 +91,13 @@ const Plate = ({ s, t, board }) => {
 /* ---- close-ups: HD bust over the blurred classroom ---- */
 const CloseUp = ({ s, t }) => {
   const z = zoomAt(s, t); const who = s.kind === 'cuP' ? 'P' : 'S';
-  const bob = Math.sin(t * 1.3) * 0.6; const breathe = 1 + Math.sin(t * 1.9) * 0.004;
+  const bob = Math.sin(t * 1.3) * 0.6; const breathe = 1 + Math.sin(t * 1.9) * 0.004; const m = motionAt(who, t);
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
       <Img src={staticFile(`llm2/cu_bg${who}.jpg`)} style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: 1920, transform: `scale(${1.04 + (z - 1) * 0.5})` }} />
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 75% 28%, rgba(255,190,110,0.22), transparent 60%)' }} />
-      <div style={{ position: 'absolute', left: who === 'P' ? -170 : -150, top: 560, width: 1400, height: 1400, transformOrigin: '50% 100%', transform: `scale(${z * breathe}) rotate(${who === 'P' ? bob : -bob}deg)` }}>
-        <Face who={who} t={t} size={1400} vis={VIS2.w} sched={VIS2.s} nat={NAT.w} mirror={who === 'S'} filter="sepia(0.16) saturate(1.1) brightness(1.03) contrast(1.03)" />
+      <div style={{ position: 'absolute', left: who === 'P' ? -170 : -150, top: 560 + m.dy * 2, width: 1400, height: 1400, transformOrigin: '50% 100%', transform: `scale(${z * breathe * m.s}) rotate(${(who === 'P' ? bob : -bob) + (who === 'P' ? m.rot : -m.rot)}deg)` }}>
+        <Face who={who} t={t} size={1400} vis={VIS.w} sched={VIS.s} nat={NAT.w} mirror={who === 'S'} filter="sepia(0.16) saturate(1.1) brightness(1.03) contrast(1.03)" />
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${who === 'P' ? 100 : 260}deg, transparent 55%, rgba(255,170,80,0.16))`, mixBlendMode: 'soft-light' }} />
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 300, background: 'linear-gradient(transparent, rgba(0,0,0,0.3))' }} />
@@ -114,20 +105,19 @@ const CloseUp = ({ s, t }) => {
   );
 };
 
-/* ---- talking busts during the diagram middle ---- */
-/* Bottom portraits (Episode 3 layout): both on screen, active speaker brighter. Professor left 10, Emily left 480 (40 px more gap than Ep3, still clear of the Instagram buttons). */
-const SPK = { P: { left: 10, label: 'PROFESSOR', col: '#2DD4BF' }, S: { left: 480, label: 'EMILY', col: '#F472B6' } };
+/* ---- BOTH portraits at the bottom of the middle (Episode 3 layout). Always both; the speaker is brighter. ---- */
+const SPK = { P: { left: 10 }, S: { left: 480 } };
 const SZ = 470;
 const Bust = ({ who, t, o }) => {
-  if (o <= 0.001) return null; const S = SPK[who]; const w = visAt(who, t); const a = Math.min(1, w.reduce((x, y) => x + y, 0));
-  const bob = Math.sin(t * 7.3) * a * 1.6 + Math.sin(t * 1.3) * 0.8; const breathe = 1 + Math.sin(t * 1.9) * 0.006;
+  if (o <= 0.001) return null; const col = COL[who]; const w = visAt(who, t); const a = Math.min(1, w.reduce((x, y) => x + y, 0)); const m = motionAt(who, t);
+  const bob = Math.sin(t * 7.3) * a * 1.6 + Math.sin(t * 1.3) * 0.8 + m.rot; const breathe = (1 + Math.sin(t * 1.9) * 0.006) * m.s;
   return (
-    <div style={{ position: 'absolute', left: S.left, top: 1920 - SZ + 40 + (1 - o) * 120, width: SZ, height: SZ, opacity: o, transformOrigin: '50% 100%', transform: `rotate(${bob * (who === 'S' ? -1 : 1)}deg) scale(${breathe})` }}>
-      <div style={{ position: 'absolute', left: SZ * 0.12, top: SZ * 0.18, width: SZ * 0.76, height: SZ * 0.76, borderRadius: '50%', background: `radial-gradient(circle, ${S.col}55, transparent 65%)`, filter: 'blur(10px)' }} />
-      <div style={{ position: 'absolute', inset: 0, filter: `drop-shadow(0 0 14px ${S.col}88) drop-shadow(0 10px 20px rgba(0,0,0,0.5))` }}>
-        <Face who={who} t={t} size={SZ} vis={VIS2.w} sched={VIS2.s} nat={NAT.w} mirror={who === 'S'} />
+    <div style={{ position: 'absolute', left: SPK[who].left, top: 1920 - SZ + 40 + (1 - o) * 120 + m.dy, width: SZ, height: SZ, opacity: o, transformOrigin: '50% 100%', transform: `rotate(${bob * (who === 'S' ? -1 : 1)}deg) scale(${breathe})` }}>
+      <div style={{ position: 'absolute', left: SZ * 0.12, top: SZ * 0.18, width: SZ * 0.76, height: SZ * 0.76, borderRadius: '50%', background: `radial-gradient(circle, ${col}55, transparent 65%)`, filter: 'blur(10px)' }} />
+      <div style={{ position: 'absolute', inset: 0, filter: `drop-shadow(0 0 14px ${col}88) drop-shadow(0 10px 20px rgba(0,0,0,0.5))` }}>
+        <Face who={who} t={t} size={SZ} vis={VIS.w} sched={VIS.s} nat={NAT.w} mirror={who === 'S'} />
       </div>
-      <div style={{ position: 'absolute', left: who === 'P' ? 270 : 30, top: 60, padding: '6px 14px 7px', borderRadius: 12, border: `1.5px solid ${S.col}`, background: 'rgba(8,16,13,0.6)', fontFamily: F.mono, fontWeight: 700, fontSize: 20, letterSpacing: 3, color: S.col, boxShadow: `0 0 16px ${S.col}66` }}>{S.label}</div>
+      <div style={{ position: 'absolute', left: who === 'P' ? 270 : 30, top: 60, padding: '6px 14px 7px', borderRadius: 12, border: `1.5px solid ${col}`, background: 'rgba(8,16,13,0.6)', fontFamily: F.mono, fontWeight: 700, fontSize: 20, letterSpacing: 3, color: col, boxShadow: `0 0 16px ${col}66` }}>{NAME[who]}</div>
     </div>
   );
 };
@@ -141,20 +131,20 @@ const Speakers = ({ t, from, to }) => {
 
 /* ---- overlays ---- */
 const Banner = ({ t, B }) => {
-  if (t > B.t1 + 0.5) return null;
+  if (!B || t > B.t1 + 0.5) return null;
   const o = ap(t, 0.0, 0.25) * (1 - ap(t, B.t1, 0.45)); const pp = 0.9 + 0.1 * backE(t / 0.5);
   return (
     <div style={{ position: 'absolute', left: 0, top: 1020, width: 1080, display: 'flex', justifyContent: 'center', opacity: o }}>
       <div style={{ transform: `scale(${pp})`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '24px 44px 30px', borderRadius: 34, background: 'rgba(15,8,2,0.74)', border: '2px solid rgba(255,176,102,0.55)', maxWidth: 940 }}>
-        <div style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 26, letterSpacing: 5, color: '#ffb066' }}>EPISODE {EP}</div>
-        <div style={{ fontFamily: F.ui, fontWeight: 700, fontSize: 76, color: '#fff', lineHeight: 1.05 }}>{TITLE}</div>
-        <div style={{ fontFamily: F.ui, fontWeight: 500, fontSize: 30, color: 'rgba(255,240,215,0.85)' }}>Parameters and data</div>
+        <div style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 26, letterSpacing: 5, color: '#ffb066' }}>EPISODE {CFG.meta.ep}</div>
+        <div style={{ fontFamily: F.ui, fontWeight: 700, fontSize: 76, color: '#fff', lineHeight: 1.05, textAlign: 'center' }}>{CFG.meta.title}</div>
+        {B.sub && <div style={{ fontFamily: F.ui, fontWeight: 500, fontSize: 30, color: 'rgba(255,240,215,0.85)' }}>{B.sub}</div>}
       </div>
     </div>
   );
 };
 const Remember = ({ t, RM }) => {
-  if (t < RM.t0 - 0.1 || t > RM.t1 + 0.5) return null;
+  if (!RM || t < RM.t0 - 0.1 || t > RM.t1 + 0.5) return null;
   const o = ap(t, RM.t0, 0.4) * (1 - ap(t, RM.t1, 0.35));
   return (
     <div style={{ position: 'absolute', left: 70, top: 975, width: 940, opacity: o, transform: `translateY(${(1 - o) * 20}px)` }}>
@@ -165,11 +155,10 @@ const Remember = ({ t, RM }) => {
     </div>
   );
 };
-/* the Pipzo robot avatar, blinking */
+/* the Pipzo robot avatar, blinking every ~2.2 s */
 const BlinkBot = ({ t }) => {
-  // blink every ~2.2 s, double-blink sometimes; eyelid covers the white eye squares
   const cyc = (t * 1.0) % 2.2; const b = cyc < 0.08 ? cyc / 0.08 : cyc < 0.12 ? 1 : cyc < 0.2 ? 1 - (cyc - 0.12) / 0.08 : 0;
-  const k = 144 / 640; // avatar drawn at ~144px inside the ring
+  const k = 144 / 640;
   const Lid = ({ x, y, w, h }) => (
     <div style={{ position: 'absolute', left: (x - 4) * k, top: (y - 4) * k, width: (w + 8) * k, height: (h + 8) * k, overflow: 'hidden', borderRadius: 6 * k }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: `${b * 100}%`, background: 'linear-gradient(180deg, #f07a2a, #e2621a)', borderBottom: b > 0.05 ? `${Math.max(1.2, 5 * k)}px solid #2a1206` : 'none', boxSizing: 'border-box' }} />
@@ -182,11 +171,12 @@ const BlinkBot = ({ t }) => {
     </div>
   );
 };
+/* closing Follow card over the classroom (Episode 3): robot blinks, Follow pulses, optional tap to "Following ✓" */
 const Follow = ({ t, FB, dur }) => {
   if (t < FB.t0 - 0.05) return null;
   const o = ap(t, FB.t0, 0.45); const pp = 0.85 + 0.15 * backE((t - FB.t0) / 0.5);
-  const tapped = t > FB.tap; const press = t > FB.tap - 0.12 && t < FB.tap + 0.18 ? 0.92 : 1;
-  const pulse = t > FB.pulse && !tapped ? 1 + 0.05 * Math.sin((t - FB.pulse) * 9) : 1; const ring = clamp((t - FB.tap) / 0.6);
+  const tapped = FB.tap != null && t > FB.tap; const press = FB.tap != null && t > FB.tap - 0.12 && t < FB.tap + 0.18 ? 0.92 : 1;
+  const pulse = t > FB.pulse && !tapped ? 1 + 0.05 * Math.sin((t - FB.pulse) * 9) : 1; const ring = FB.tap != null ? clamp((t - FB.tap) / 0.6) : 0;
   return (
     <div style={{ position: 'absolute', left: 0, top: 640, width: 1080, display: 'flex', justifyContent: 'center', opacity: o * (1 - ap(t, dur - 0.4, 0.3)) }}>
       <div style={{ width: 760, padding: '34px 36px 38px', borderRadius: 40, background: 'rgba(255,255,255,0.95)', boxShadow: '0 24px 60px rgba(0,0,0,0.35)', transform: `scale(${pp})`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
@@ -203,66 +193,71 @@ const Follow = ({ t, FB, dur }) => {
     </div>
   );
 };
+/* captions: the spoken word lights up in the speaker's neon colour; Emily's lines carry her tag */
 const Captions = ({ t, W, top }) => {
   const n = W.findIndex((w) => w.t0 > t); const i0 = n === -1 ? W.length - 1 : n - 1;
   if (i0 < 0) return null; const cur = W[i0]; if (t > cur.t1 + 0.5) return null;
   let s = i0; while (s > 0 && i0 - s < 3 && W[s - 1].who === cur.who && cur.t0 - W[s - 1].t0 < 1.6 && !/[.?!]$/.test(W[s - 1].raw)) s--;
   let e = i0; while (e < W.length - 1 && e - s < 4 && W[e + 1].who === cur.who && W[e + 1].t0 - W[e].t1 < 0.6 && !/[.?!,:]$/.test(W[e].raw)) e++;
-  const words = W.slice(s, e + 1);
+  const words = W.slice(s, e + 1); const col = COL[cur.who];
   return (
     <div style={{ position: 'absolute', left: 40, top, width: 1000, display: 'flex', justifyContent: 'center', zIndex: 5 }}>
       <div style={{ padding: '10px 26px 14px', borderRadius: 26, background: 'rgba(15,8,2,0.66)', fontFamily: F.ui, fontWeight: 700, fontSize: 54, whiteSpace: 'nowrap', display: 'flex', gap: 14, alignItems: 'center' }}>
-        {cur.who === 'S' && <span style={{ fontFamily: F.mono, fontSize: 22, color: '#ffb066', border: '2px solid #ffb066', borderRadius: 10, padding: '2px 10px' }}>STUDENT</span>}
-        {words.map((w, i) => <span key={i} style={{ color: s + i <= i0 ? '#fff' : 'rgba(255,255,255,0.4)' }}>{w.raw}</span>)}
+        {cur.who === 'S' && <span style={{ fontFamily: F.mono, fontSize: 22, color: col, border: `2px solid ${col}`, borderRadius: 10, padding: '2px 10px', boxShadow: `0 0 10px ${col}66` }}>EMILY</span>}
+        {words.map((w, i) => { const k = s + i; const now = k === i0 && t <= w.t1 + 0.12; return <span key={i} style={{ color: now ? col : k <= i0 ? '#fff' : 'rgba(255,255,255,0.4)', textShadow: now ? `0 0 14px ${col}, 0 0 4px ${col}` : 'none' }}>{w.raw}</span>; })}
       </div>
     </div>
   );
 };
 
-export const Ep2 = () => {
+export const Episode = () => {
   useFonts();
   const f = useCurrentFrame(); const t = DBG.t != null ? DBG.t : f / FPS;
   const dur = CFG.total; const P = CFG.push, PB = CFG.pull, M = CFG.mid;
   const shots = CFG.shots.filter((s) => s.kind !== 'mid');
   const shot = shots.find((s) => t >= s.t0 && t < s.t1) || shots[shots.length - 1];
-  const preMid = t < M.t0 + 0.4; const inMid = t >= P.t1 - 0.4 && t < PB.t1; const afterPull = t >= PB.t0;
+  const punch = (CFG.punch || []).find((p) => t >= p.t0 && t < p.t1);
+  const preMid = t < M.t0 + 0.4; const inMid = t >= P.t1 - 0.4 && t < PB.t1;
   const board = (s) => (s.diagram ? 'diagram' : s.t0 < M.t0 ? 'drawing' : null);
-  // push-in into the pink dial on the board
+  // push-in into the pink handoff object on the board
   let pushStyle = null;
   if (t >= P.t0 && t < P.t1 + 0.4) {
-    const ps = shots.find((s) => P.t0 >= s.t0 && P.t0 < s.t1); const zs = zoomAt(ps, P.t0); const [pvx, pvy] = ps.pivot;
-    const [dx, dy] = mapPt(DW, DH, DRAWQ(ps.kind), DIAL[0], DIAL[1]); const mx = pvx + (dx - pvx) * zs, my = pvy + (dy - pvy) * zs;
+    const ps = shots.find((s) => P.t0 >= s.t0 && P.t0 < s.t1) || shot; const zs = zoomAt(ps, P.t0); const [pvx, pvy] = ps.pivot;
+    const [dx, dy] = mapPt(DW, DH, DRAWQ(ps.kind === 'mw' ? 'mw' : 'pt'), DIAL[0], DIAL[1]); const mx = pvx + (dx - pvx) * zs, my = pvy + (dy - pvy) * zs;
     const k = sm((t - P.t0) / (P.t1 - P.t0)); const sc = lerp(1, P.zoom, k);
     pushStyle = { transformOrigin: '0 0', transform: `translate(${lerp(0, 450 - mx * P.zoom, k)}px, ${lerp(0, 860 - my * P.zoom, k)}px) scale(${sc})` };
   }
   const midO = t < P.t1 ? clamp((t - (P.t1 - 0.35)) / 0.35) : 1;
   const pullK = sm((t - PB.t0) / (PB.t1 - PB.t0));
-  const isCU = shot.kind === 'cuP' || shot.kind === 'cuS';
-  const capTop = inMid && t < PB.t0 ? 1270 : t > CFG.follow.t0 - 0.05 ? 1400 : 1235;
-  const renderShot = (s, extra = {}) => (s.kind === 'mw' || s.kind === 'pt' ? <Plate s={s} t={t} board={extra.board !== undefined ? extra.board : board(s)} /> : <CloseUp s={s} t={t} />);
+  const following = t > CFG.follow.t0 - 0.05;
+  const capTop = punch ? 1235 : inMid && t < PB.t0 ? 1300 : following ? 1400 : shot.kind === 'device' ? 1680 : 1235;
+  const renderShot = (s) => (s.kind === 'device' ? <ColdOpen t={t} /> : s.kind === 'mw' || s.kind === 'pt' ? <Plate s={s} t={t} board={board(s)} /> : <CloseUp s={s} t={t} />);
+  const M0 = CFG.meta;
   return (
     <AbsoluteFill style={{ background: C.ground }}>
-      {/* classroom before the middle */}
+      {!DBG.muted && <Audio src={staticFile('llm2/mix.wav')} />}
+      {/* classroom before the middle, then the push-in */}
       {preMid && t < P.t1 + 0.4 && (
         <div style={{ position: 'absolute', inset: 0, ...(pushStyle || {}) }}>
           <div style={{ position: 'absolute', inset: 0, opacity: pushStyle ? 1 - sm((t - P.t0) / ((P.t1 - P.t0) * 0.8)) * 0.85 : 1 }}>{renderShot(shot)}</div>
         </div>
       )}
       {/* diagram middle */}
-      {inMid && t < PB.t0 && <div style={{ position: 'absolute', inset: 0, opacity: midO }}><Middle2 t={t} /></div>}
-      {/* pull-back */}
-      {t >= PB.t0 && t < PB.t1 + 0.01 && (() => { const ps = shots.find((s) => s.t0 >= PB.t0 - 0.01); return (<>
-        <div style={{ position: 'absolute', inset: 0, opacity: sm((pullK - 0.15) / 0.5) }}><Plate s={ps} t={t} board={null} /></div>
+      {inMid && t < PB.t0 && <div style={{ position: 'absolute', inset: 0, opacity: midO }}><Middle t={t} /></div>}
+      {punch && t < PB.t0 && <CloseUp s={punch} t={t} />}
+      {/* pull-back: the end frame shrinks onto the board while the classroom comes back around it */}
+      {t >= PB.t0 && t < PB.t1 + 0.01 && (() => { const ps = shots.find((s) => s.t0 >= PB.t0 - 0.01) || shot; const k = ps.kind === 'pt' ? 'pt' : 'mw'; return (<>
+        <div style={{ position: 'absolute', inset: 0, opacity: sm((pullK - 0.15) / 0.5) }}><Plate s={{ ...ps, kind: k }} t={t} board={null} /></div>
         <div style={{ position: 'absolute', inset: 0, background: C.ground, opacity: 1 - sm((pullK - 0.1) / 0.45) }} />
-        <DiagramOnQuad quad={lerpQ(FULLQ, DIAGQ(ps.kind), pullK)} />
+        <DiagramOnQuad quad={lerpQ(FULLQ(CROP), DIAGQ(k, CROP), pullK)} />
       </>); })()}
       {t >= PB.t1 && renderShot(shot)}
       {/* overlays */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: 300, background: 'linear-gradient(180deg, rgba(20,12,4,0.45), rgba(20,12,4,0))' }} />
-      <div style={{ position: 'absolute', left: 60, top: 196, fontFamily: F.mono, fontWeight: 700, fontSize: 22, letterSpacing: 3, color: 'rgba(255,240,215,0.85)' }}>LARGE LANGUAGE MODELS, GPT-2 · EP {EP}</div>
+      <div style={{ position: 'absolute', left: 60, top: 196, fontFamily: F.mono, fontWeight: 700, fontSize: 22, letterSpacing: 3, color: 'rgba(255,240,215,0.85)' }}>{M0.series.toUpperCase()} · EP {M0.ep}</div>
       <div style={{ position: 'absolute', left: 60, top: 232, width: 700, height: 4, borderRadius: 2, background: 'rgba(255,240,215,0.2)' }}><div style={{ width: `${(t / dur) * 100}%`, height: '100%', borderRadius: 2, background: '#ffb066' }} /></div>
-      <div style={{ position: 'absolute', right: 60, top: 190, fontFamily: F.ui, fontWeight: 700, fontSize: 26, color: 'rgba(255,240,215,0.9)', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>@pipzo.ai</div>
-      <Speakers t={t} from={M.t0 + 0.3} to={PB.t0} />
+      {M0.handle && <div style={{ position: 'absolute', right: 60, top: 190, fontFamily: F.ui, fontWeight: 700, fontSize: 26, color: 'rgba(255,240,215,0.9)', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>@pipzo.ai</div>}
+      {!(punch && t < PB.t0) && <Speakers t={t} from={M.t0 + 0.3} to={PB.t0} />}
       <Banner t={t} B={CFG.banner} />
       <Remember t={t} RM={CFG.remember} />
       <Follow t={t} FB={CFG.follow} dur={dur} />

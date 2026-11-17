@@ -1,0 +1,280 @@
+{
+ "series": "Large Language Models, GPT-2",
+ "ep": 3,
+ "title": "Old NLP vs LLMs",
+ "handle": true,
+ "banner": null,
+ "remember": null,
+ "follow": {
+  "next_n": 4,
+  "next_title": "The Transformer in One Minute",
+  "tap": false
+ },
+ "push": {
+  "after": "P04",
+  "zoom": 5.0,
+  "lead": 0.5
+ },
+ "pull": {
+  "line": "P13",
+  "at": 0.9
+ },
+ "lines": [
+  {
+   "id": "E01",
+   "who": "S",
+   "voice": "emily-annoyed-flat",
+   "text": "I lost my card. It heard 'balance'.",
+   "shot": "device",
+   "at": 0.45
+  },
+  {
+   "id": "P02",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "That's not a stupid bot. That's a perfect bot, built the old way.",
+   "shot": "wide"
+  },
+  {
+   "id": "E03",
+   "who": "S",
+   "voice": "emily-confident-smug",
+   "text": "So the bank wrote bad rules. Write better ones.",
+   "shot": "cuS"
+  },
+  {
+   "id": "P03",
+   "who": "P",
+   "voice": "X-prof-teasing-bet",
+   "text": "Bet. Better rules win, I buy lunch. If not, you do.",
+   "shot": "cuP",
+   "gap": 0.25,
+   "motion": [
+    [
+     "nod",
+     "lunch"
+    ]
+   ]
+  },
+  {
+   "react": "cuS",
+   "dur": 1.1,
+   "gap": 0.1
+  },
+  {
+   "id": "P04",
+   "who": "P",
+   "voice": "X-prof-mystery-invite",
+   "text": "Before LLMs, every language job had its own hand-built machine. Let's open yours.",
+   "shot": "point",
+   "gap": 0.15
+  },
+  {
+   "id": "P05",
+   "who": "P",
+   "voice": "PB-calm-teaching",
+   "text": "Rule one. If the email says 'free money', mark it spam."
+  },
+  {
+   "id": "E05",
+   "who": "S",
+   "voice": "emily-confident-smug",
+   "text": "Easy.",
+   "gap": 0.15
+  },
+  {
+   "id": "P06a",
+   "who": "P",
+   "voice": "PB-frustrated-tired",
+   "text": "Then spammers wrote 'fr33 money'.",
+   "gap": 0.35
+  },
+  {
+   "id": "E06",
+   "who": "S",
+   "voice": "X-emily-stunned",
+   "text": "Seriously?",
+   "gap": 0.25,
+   "punch": true
+  },
+  {
+   "id": "P06b",
+   "who": "P",
+   "voice": "PB-frustrated-tired",
+   "text": "So... rule two.",
+   "gap": 0.25
+  },
+  {
+   "id": "P07a",
+   "who": "P",
+   "voice": "PB-frustrated-tired",
+   "text": "Then another. Then another.",
+   "gap": 0.3
+  },
+  {
+   "id": "E07",
+   "who": "S",
+   "voice": "X-emily-outraged",
+   "text": "A thousand rules?",
+   "gap": 0.2
+  },
+  {
+   "id": "P07b",
+   "who": "P",
+   "voice": "PB-serious-slow",
+   "text": "And it never ended.",
+   "gap": 0.25
+  },
+  {
+   "id": "P08",
+   "who": "P",
+   "voice": "PB-serious-slow",
+   "text": "And that filter could do nothing else. Not translate. Not summarise.",
+   "gap": 0.4
+  },
+  {
+   "id": "E08",
+   "who": "S",
+   "voice": "emily-puzzled-unsure",
+   "text": "Just one job?",
+   "gap": 0.25
+  },
+  {
+   "id": "P09",
+   "who": "P",
+   "voice": "PB-serious-slow",
+   "text": "The problem was never the rules. It was that someone had to write them.",
+   "gap": 0.4
+  },
+  {
+   "id": "E09",
+   "who": "S",
+   "voice": "emily-thoughtful-quiet",
+   "text": "...oh.",
+   "gap": 2.0,
+   "punch": true
+  },
+  {
+   "id": "E10a",
+   "who": "S",
+   "voice": "emily-challenging-sharp",
+   "text": "Okay... prove it. Ask the old bot and the new one.",
+   "gap": 0.5
+  },
+  {
+   "id": "P10",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "Same question, three ways.",
+   "gap": 0.2
+  },
+  {
+   "id": "E10b",
+   "who": "S",
+   "voice": "X-emily-gasp-amazed",
+   "text": "Wait. All three?",
+   "gap": 2.7,
+   "punch": true,
+   "motion": [
+    [
+     "pop"
+    ]
+   ]
+  },
+  {
+   "id": "P11a",
+   "who": "P",
+   "voice": "PB-excited-energetic",
+   "text": "An LLM learns the patterns of language itself, from enormous amounts of text.",
+   "gap": 0.45
+  },
+  {
+   "id": "E11",
+   "who": "S",
+   "voice": "emily-bright-curious",
+   "text": "So it does every job?",
+   "gap": 0.2
+  },
+  {
+   "id": "P11b",
+   "who": "P",
+   "voice": "PB-excited-energetic",
+   "text": "Spam, replies, summaries, translation.",
+   "gap": 0.2
+  },
+  {
+   "id": "P12a",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "One model replaces a shelf of vendor tools.",
+   "gap": 0.45
+  },
+  {
+   "id": "P12b",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "An agent reads a ticket, decides, writes the reply, calls a tool.",
+   "gap": 0.3
+  },
+  {
+   "id": "E13",
+   "who": "S",
+   "voice": "emily-puzzled-unsure",
+   "text": "But with no rules, how does it know what's spam?",
+   "gap": 1.6
+  },
+  {
+   "id": "P13",
+   "who": "P",
+   "voice": "PB-thoughtful-reflective",
+   "text": "It doesn't know. It learned the pattern: Episode 1's guessing trick, at scale.",
+   "gap": 0.25
+  },
+  {
+   "id": "P14",
+   "who": "P",
+   "voice": "PB-confident-clear",
+   "text": "Old way: rules for every task. New way: one model that learned language itself.",
+   "shot": "point",
+   "gap": 0.35
+  },
+  {
+   "id": "E14",
+   "who": "S",
+   "voice": "X-emily-laugh-defeat",
+   "text": "Fine. Lunch is on me. But the bank still owes me a card.",
+   "shot": "cuS",
+   "gap": 0.3,
+   "motion": [
+    [
+     "bounce",
+     "lunch"
+    ]
+   ]
+  },
+  {
+   "react": "cuP",
+   "dur": 1.6,
+   "gap": 0.15
+  },
+  {
+   "id": "P15a",
+   "who": "P",
+   "voice": "PB-warm-welcoming",
+   "text": "Next: the transformer, the idea inside almost every LLM.",
+   "shot": "wide",
+   "gap": 0.25,
+   "role": "next"
+  },
+  {
+   "id": "P15b",
+   "who": "P",
+   "voice": "PB-curious-mystery",
+   "text": "Which rule-based tool at work could an LLM replace? Comment below.",
+   "shot": "wide",
+   "gap": 0.3,
+   "role": "ask"
+  }
+ ],
+ "sound": []
+}
