@@ -8,11 +8,25 @@ description: "Build a Pipzo Pixar-classroom 2D hybrid reel (HD classroom, Remoti
 This skill builds a complete 2D episode for any new topic. It reproduces the approved LLM-GPT2 Episode 2 ("Why 'Large'?") and uses the bottom-portrait middle from Episode 3:
 - classroom opening and closing from HD stills
 - push-in into the pink chalk object
-- 2D/3D-glow diagram middle with **both portraits talking at the bottom**
+- flat diagram middle (with glow and slight tilt effects) and **both portraits talking at the bottom**
 - pull-back, Remember card, Follow card
 - captions, cover and caption files
 
 Lip sync is the **frozen Remotion lip sync v1**. It uses no ElevenLabs credits.
+
+## Scope: 2D only (hard rule)
+This skill **never** builds a 3D episode, whatever the script or brief says. "3D" here means:
+- characters walking or standing in a 3D space
+- a 3D room or world, or a three.js / WebGL scene
+- ideas rising from a 3D floor
+- re-sequenced walking/talking character clips
+
+If the script asks for any of these:
+1. Do not build it with this skill, and do not invent a 3D version from these files.
+2. Tell the user the script calls for the 3D format and that this skill is 2D only. Recommend the separate `pixar-classroom-hybrid-3d` skill.
+3. Offer to build the episode in the 2D format instead. Continue in 2D only if the user agrees.
+
+The only "3D" this skill allows is the flat glow look of the diagram middle (`Tilt`, `Bar3D`, `Glass`). These are CSS effects on 2D cards, not a 3D scene.
 
 ## Skill folder
 Everything lives in `~/Documents/AI Video Editor/Skills/pixar-classroom-hybrid-2d/`. The folder map is in `README.md`.
@@ -145,7 +159,7 @@ Also on the Mac:
 - Final diagram: holds 2 s, then a 1.6 s pull-back. The diagram stays on the board for the closing shots.
 
 **Middle look**
-- Classroom Green Dark Keynote with 3D glow (`llm1/theme.js`, `llm1/fx.jsx`).
+- Classroom Green Dark Keynote with glow and tilt effects (`llm1/theme.js`, `llm1/fx.jsx`). These are 2D effects only (see Scope).
   - Colours: ground #22312B, orange #F97316 for emphasis, pink #F472B6 for the handoff, teal #2DD4BF, yellow #FACC15 for numbers only, green for tokens.
   - ≤8 words on screen. Content column x 70–830, y 330–1240. Keep the right 230 px clear.
 - Rotate one variation per episode: the `Stage` floor-grid colour, the glow accent, or the scene entrance. Log which one was used, and don't repeat it within 3 episodes.
