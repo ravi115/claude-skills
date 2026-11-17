@@ -16,11 +16,52 @@ Voice Studio on the Mac is retired, so don't use it. ElevenLabs is not part of t
   - `refs.json` maps each voice name to its WAV and its exact transcript.
   - This folder is the private Kaggle dataset `raviranjan115/pipzo-voices-v2`, file for file.
 - `voices.md`: the catalogue of every voice name, its mood, its length and its transcript. Pick voices from here.
-- `scripts/tts-kaggle.sh`: voices a whole episode in ONE Kaggle GPU run and downloads numbered WAVs.
+- `kaggle-config.json`: how to connect to Kaggle (account, dataset, saved model, GPU, limits). See "Kaggle connection".
+- `scripts/tts-kaggle.sh`: voices a whole episode in ONE Kaggle GPU run, downloads numbered WAVs, then confirms the GPU session is stopped.
+- `scripts/build-model-cache.sh`: one-time: saves the OmniVoice model + pip wheels on Kaggle so runs skip install and download.
 - `scripts/make_lines.py`: turns the episode table (`ID | Voice | Text`) into `lines.txt` + `ids.txt` for the run.
 - `scripts/postprocess.py`: names the WAVs by line ID, trims silence, applies the optional speed-up, levels to −18 LUFS, and writes `$PIPZO_WORK/in/<ID>.mp3`.
 - `scripts/kaggle-tests/`: the one-off OmniVoice and Chatterbox test kernels, kept for reference.
 - `samples/review-all-moods.mp3`: every mood back to back, to hear the range.
+
+## Kaggle connection (`kaggle-config.json`)
+All scripts read `kaggle-config.json` in this folder. Change settings there, not in the scripts.
+
+| Key | Meaning |
+|---|---|
+| `username` | Kaggle account (`raviranjan115`). |
+| `accelerator` | GPU for voice runs (`NvidiaTeslaT4`). |
+| `voices_dataset` | Private dataset with the 46 references (`raviranjan115/pipzo-voices-v2`). |
+| `model_name` | OmniVoice model on Hugging Face (`k2-fsa/OmniVoice`). |
+| `model_cache_kernel` | Kaggle kernel whose saved output holds the model + pip wheels (`raviranjan115/pipzo-omnivoice-cache`). |
+| `use_model_cache` | `false` (default, fastest): download the model each run. `true`: use the saved model (slow to read on Kaggle; fallback only). |
+| `batch_kernel` | Kernel each voice run pushes (`raviranjan115/pipzo-tts-batch`). |
+| `steps` | Diffusion steps: 32 = best quality, 16 = faster draft. |
+| `max_run_minutes` | Hard GPU limit per run (Kaggle kills the kernel after this). |
+| `poll_seconds`, `out_dir` | Status polling interval; where WAVs are downloaded. |
+
+**Token:** never in the config. The Kaggle CLI reads it from `KAGGLE_API_TOKEN` (exported in `~/.zshrc`) or `~/.kaggle/access_token`. Run scripts through `zsh -ic '...'` so `~/.zshrc` is loaded. Never print, echo or log the token.
+
+**First-time setup on a new machine:** `python3 -m pip install -U kaggle`, then check `kaggle kernels list --mine`. No model setup is needed: each run downloads OmniVoice (~22 s). `scripts/build-model-cache.sh` is only for the offline fallback.
+
+## Guardrails (hard rules)
+1. **Shut the GPU down after every run.** A voice run must end with no Kaggle GPU session left running. `tts-kaggle.sh` enforces this four ways:
+   - pushes the kernel with a hard `--timeout` of `max_run_minutes` (Kaggle stops it after that);
+   - an in-kernel watchdog exits 60 s before that limit, whatever the kernel is doing;
+   - the kernel exits the moment the last WAV is written;
+   - after downloading the WAVs, the script re-checks the kernel and reports "GPU session stopped" or "NOT stopped". It never stops a session itself.
+
+   **Kaggle Session Hook** (`hooks/kaggle-session-hook.sh`, registered in `~/.claude/settings.json` as a PostToolUse hook on Bash; to install on a new machine, merge `hooks/settings-snippet.json` into that file): after any command that downloads voices (`tts-kaggle.sh` or `kaggle kernels output`), it checks the batch kernel and any kernel named in the command, and reports to the user and to Claude whether the GPU session is shut down. It only reports; it never stops or deletes a session, because one may be kept on for more batches.
+
+   When the hook (or the script) says a session is NOT shut down: if more batches are planned for it, carry on; otherwise tell the user and stop it on kaggle.com (or delete the kernel with the user's OK). A background run triggers the hook at launch, so it will say "running" then; re-check after the run finishes. Never push a GPU kernel any other way and never open the batch kernel as an interactive notebook session.
+2. **Load the model the fast way: download it each run.** Keep `use_model_cache: false` (internet on). Measured on a T4, 17 Nov 2026:
+
+   | | Download from Hugging Face | Saved model (kernel output) |
+   |---|---|---|
+   | install | 32 s | 37 s |
+   | model load | **22 s** | **484 s** |
+
+   Kaggle mounts a saved kernel output as slow attached storage, so reading the 3.3 GB model from it takes ~8 min, while Hugging Face downloads it in ~22 s. A whole run (queue + install + load + 20 lines) is ~3 min with download. The saved model (`scripts/build-model-cache.sh`, `model_cache_kernel`, `use_model_cache: true`) stays available only as a fallback if Hugging Face is unreachable. If a run's `run.log` shows a model load over ~60 s, check this setting first.
 
 ## Voices by mood (pick by the line's feeling tag)
 

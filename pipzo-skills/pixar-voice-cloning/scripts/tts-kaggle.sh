@@ -1,32 +1,36 @@
 #!/usr/bin/env zsh
-# tts-kaggle.sh - voice every line of a text file in ONE Kaggle GPU run (OmniVoice, T4), download numbered WAVs.
+# tts-kaggle.sh - voice every line of a text file in ONE Kaggle GPU run (OmniVoice), download numbered WAVs,
+# then make sure the GPU session is stopped.
 #
-#   ./tts-kaggle.sh path/to/lines.txt
+#   scripts/tts-kaggle.sh path/to/lines.txt
 #
-# lines.txt, one line per row (blank rows and rows starting with # are skipped):
-#   PB-calm-teaching | The model reads an enormous amount of text.     <- cloned from that voice
+# lines.txt, one line per row (blank rows and # rows skipped):
+#   PB-calm-teaching | The model reads an enormous amount of text.     <- cloned from that voice (names: voices.md)
 #   Just a line with no voice name.                                     <- OmniVoice default voice
-# Voice names = VoiceStudio profile names, from refs.json in the private Kaggle dataset raviranjan115/pipzo-voices-v2.
-# Output: ~/Downloads/voice-out/<YYYY-MM-DD>/001.wav, 002.wav ... in file order, plus run.log.
-# The kernel installs OmniVoice, loads it once, voices every line, exits. No GPU time keeps running.
-# Kaggle token comes from KAGGLE_API_TOKEN / ~/.kaggle (never printed).
+# Settings come from ../kaggle-config.json. Token from KAGGLE_API_TOKEN / ~/.kaggle (never printed).
+# Output: <out_dir>/<YYYY-MM-DD>/001.wav, 002.wav ... in file order, plus run.log.  TTS_OUT / TTS_STEPS override.
+#
+# GPU guardrails (all four always apply):
+#   1. Kaggle hard limit: the kernel is pushed with --timeout = max_run_minutes; Kaggle kills it after that.
+#   2. In-kernel watchdog: the script exits itself 60 s before that limit, whatever it is doing.
+#   3. The kernel exits as soon as the last WAV is written (no notebook left open, no idle session).
+#   4. After downloading, this script re-checks the status and REPORTS it ("GPU session stopped" / "NOT stopped").
+#      It never stops a session itself; the Kaggle Session Hook (hooks/kaggle-session-hook.sh) reports it to Claude too.
 set -euo pipefail
 setopt null_glob
 
+SKILL="${0:A:h:h}"; CFG="$SKILL/kaggle-config.json"
+cfg() { python3 -c 'import json,os,sys; v=json.load(open(sys.argv[1]))[sys.argv[2]]; print(os.path.expanduser(v) if isinstance(v,str) else json.dumps(v))' "$CFG" "$1"; }
 LINES_FILE="${1:?usage: tts-kaggle.sh path/to/lines.txt}"
-USER_SLUG="${KAGGLE_USER:-raviranjan115}"
-KERNEL="$USER_SLUG/pipzo-tts-batch"
-DATASET="$USER_SLUG/pipzo-voices-v2"
-STEPS="${TTS_STEPS:-32}"                     # 32 = best quality (VoiceStudio default), 16 = faster
-OUT="${TTS_OUT:-$HOME/Downloads/voice-out/$(date +%F)}"
-POLL_SECONDS=20
-MAX_WAIT_MIN=40
+KERNEL=$(cfg batch_kernel); DATASET=$(cfg voices_dataset); CACHE=$(cfg model_cache_kernel); MODEL=$(cfg model_name)
+USE_CACHE=$(cfg use_model_cache); ACC=$(cfg accelerator); STEPS="${TTS_STEPS:-$(cfg steps)}"
+MAX_MIN=$(cfg max_run_minutes); POLL=$(cfg poll_seconds)
+OUT="${TTS_OUT:-$(cfg out_dir)/$(date +%F)}"
 
 [[ -f "$LINES_FILE" ]] || { echo "ERROR: $LINES_FILE not found"; exit 1; }
 command -v kaggle >/dev/null || { echo "ERROR: kaggle CLI missing (python3 -m pip install -U kaggle)"; exit 1; }
 WORK=$(mktemp -d -t tts-kaggle); trap 'rm -rf "$WORK"' EXIT
 
-# lines -> [[voice or null, text], ...] embedded in the kernel (no upload per run)
 python3 - "$LINES_FILE" "$WORK/lines.json" <<'PY'
 import json, sys
 rows = []
@@ -41,18 +45,28 @@ print(f'{len(rows)} lines, voices: {sorted({v for v, _ in rows if v})}')
 PY
 
 cat > "$WORK/tts_batch.py" <<PY
-import glob, json, os, subprocess, sys, time
+import glob, json, os, subprocess, sys, threading, time
+# guardrail 2: hard self-exit 60 s before Kaggle's limit, even if generation hangs
+_wd = threading.Timer(max(60, $MAX_MIN * 60 - 60), lambda: (print("WATCHDOG: time limit reached, exiting", flush=True), os._exit(3)))
+_wd.daemon = True; _wd.start()  # daemon: a crash anywhere still ends the session at once
 LINES = json.loads($(python3 -c 'import json,sys; print(json.dumps(open(sys.argv[1]).read()))' "$WORK/lines.json"))
 STEPS = $STEPS
 OUT = "/kaggle/working/out"; os.makedirs(OUT, exist_ok=True)
 t0 = time.time()
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "omnivoice"], check=True)
+# saved model (kernel output of the cache kernel): offline install + local weights; else download from the internet
+info = (glob.glob("/kaggle/input/**/cache-info.json", recursive=True) or [None])[0]
+if info:
+    C = os.path.dirname(info)
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--find-links", f"{C}/wheels", "omnivoice"], check=True)
+    MODEL_PATH = f"{C}/model"; SRC = "saved model " + json.load(open(info)).get("built", "")
+else:
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "omnivoice"], check=True)
+    MODEL_PATH = "$MODEL"; SRC = "internet download (no saved model attached)"
 import torch, soundfile as sf
 from omnivoice import OmniVoice
 t1 = time.time()
-model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cuda:0", dtype=torch.float16)
+model = OmniVoice.from_pretrained(MODEL_PATH, device_map="cuda:0", dtype=torch.float16)
 t2 = time.time()
-# voice references from the private dataset (mounted somewhere under /kaggle/input)
 rj = (glob.glob("/kaggle/input/**/refs.json", recursive=True) or [None])[0]
 REFS, BASE = (json.load(open(rj)), os.path.dirname(rj)) if rj else ({}, "")
 prompts = {}
@@ -72,23 +86,24 @@ for i, (voice, text) in enumerate(LINES, 1):
         print(f"{i:03d} ok {len(audio)/24000:.1f}s [{voice or 'default'}] {text[:60]}", flush=True)
     except Exception as e:
         failed.append(i); print(f"{i:03d} FAILED [{voice}] {e}", flush=True)
-print(f"TIMINGS install {t1-t0:.0f}s load {t2-t1:.0f}s generate {time.time()-t2:.0f}s for {len(LINES)} lines; refs {'found' if rj else 'MISSING'}; failed {failed}", flush=True)
+print(f"TIMINGS install {t1-t0:.0f}s load {t2-t1:.0f}s generate {time.time()-t2:.0f}s for {len(LINES)} lines; model from {SRC}; refs {'found' if rj else 'MISSING'}; failed {failed}", flush=True)
+os._exit(0)  # guardrail 3: end the session immediately
 PY
 
+if [[ "$USE_CACHE" == true ]]; then SOURCES="[\"$CACHE\"]"; NET=false; else SOURCES="[]"; NET=true; fi
 cat > "$WORK/kernel-metadata.json" <<JSON
 {"id": "$KERNEL", "title": "pipzo tts batch", "code_file": "tts_batch.py", "language": "python",
- "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_tpu": false, "enable_internet": true,
- "machine_shape": "NvidiaTeslaT4", "dataset_sources": ["$DATASET"], "kernel_sources": [], "competition_sources": [], "model_sources": []}
+ "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_tpu": false, "enable_internet": $NET,
+ "machine_shape": "$ACC", "dataset_sources": ["$DATASET"], "kernel_sources": $SOURCES, "competition_sources": [], "model_sources": []}
 JSON
 
-echo "Pushing $KERNEL ($STEPS steps) ..."
-kaggle kernels push -p "$WORK"
-kstatus=""
-for (( i = 0; i < MAX_WAIT_MIN * 60 / POLL_SECONDS; i++ )); do
-  sleep $POLL_SECONDS
-  kstatus=$(kaggle kernels status "$KERNEL" 2>&1 | grep -oE '(QUEUED|RUNNING|COMPLETE|ERROR|CANCEL[A-Z_]*)' | head -1 || true)
-  echo "$(date +%T) $kstatus"
-  [[ "$kstatus" == COMPLETE || "$kstatus" == ERROR || "$kstatus" == CANCEL* ]] && break
+echo "Pushing $KERNEL ($STEPS steps, $ACC, saved model: $USE_CACHE, hard limit ${MAX_MIN} min) ..."
+kaggle kernels push -p "$WORK" -t $(( MAX_MIN * 60 )) --accelerator "$ACC"   # guardrail 1
+state() { kaggle kernels status "$KERNEL" 2>&1 | grep -oE '(QUEUED|RUNNING|COMPLETE|ERROR|CANCEL[A-Z_]*)' | head -1 || true; }
+kstate=""
+for (( i = 0; i < (MAX_MIN * 60 + 300) / POLL; i++ )); do
+  sleep $POLL; kstate=$(state); echo "$(date +%T) $kstate"
+  [[ "$kstate" == COMPLETE || "$kstate" == ERROR || "$kstate" == CANCEL* ]] && break
 done
 
 mkdir -p "$OUT"
@@ -98,10 +113,14 @@ wavs=("$WORK"/output/out/*.wav)
 logs=("$WORK"/output/*.log)
 (( ${#logs} )) && python3 -c 'import json,sys; print("".join(e.get("data","") for e in json.load(open(sys.argv[1]))))' "${logs[1]}" > "$OUT/run.log" 2>/dev/null || true
 
-if [[ "$kstatus" != COMPLETE ]]; then
-  echo "ERROR: kernel ended with status '${kstatus:-timeout}'. Log: $OUT/run.log"
-  echo "If it is still running, stop it at https://www.kaggle.com/code/$KERNEL so no GPU time is used."
-  exit 1
+# guardrail 4: report the GPU session state after download (never stops it; the Kaggle Session Hook re-checks too)
+final=$(state)
+if [[ "$final" == QUEUED || "$final" == RUNNING ]]; then
+  echo "GPU session NOT stopped: $KERNEL is still $final. Not stopping it (more batches may need it); decide, or stop it on kaggle.com."
+else
+  echo "GPU session stopped: $final"
 fi
+
+[[ "$kstate" == COMPLETE ]] || { echo "ERROR: kernel ended with '${kstate:-timeout}'. Log: $OUT/run.log"; exit 1; }
 echo "Done: ${#wavs} WAVs in $OUT"
-grep -E 'TIMINGS|FAILED' "$OUT/run.log" 2>/dev/null || true
+grep -E 'TIMINGS|FAILED|WATCHDOG' "$OUT/run.log" 2>/dev/null || true

@@ -1,0 +1,14 @@
+{
+  "_comment": "How the scripts connect to Kaggle. The API token is NOT stored here: it is read from KAGGLE_API_TOKEN (exported in ~/.zshrc) or ~/.kaggle/access_token. Never print it.",
+  "username": "raviranjan115",
+  "accelerator": "NvidiaTeslaT4",
+  "voices_dataset": "raviranjan115/pipzo-voices-v2",
+  "model_name": "k2-fsa/OmniVoice",
+  "model_cache_kernel": "raviranjan115/pipzo-omnivoice-cache",
+  "use_model_cache": false,
+  "batch_kernel": "raviranjan115/pipzo-tts-batch",
+  "steps": 32,
+  "max_run_minutes": 20,
+  "poll_seconds": 20,
+  "out_dir": "~/Downloads/voice-out"
+}
