@@ -1,9 +1,9 @@
 // LOCKED 3D WORLD. Do not edit per episode: the stations come from cfg.json (built from episode.json) and the
 // models from content/Models.jsx.
 // The middle of a 3D episode: an open space with a glowing teal grid floor, a star sky and three star layers.
-// The Professor and Emily walk toward the camera and stop at each station. At each stop a glass box with neon
-// edges rises out of the floor to the Professor's hand height, a cap lands on it, and the station's 3D models
-// appear on the cap on their spoken cue words. When they walk on, the box sinks back into the floor.
+// The Professor and Emily walk toward the camera and stop at each station. One model: an angled walnut pedestal
+// rises out of the floor to the Professor's hand height, its top lands, and the realistic model appears on its cue
+// word. Two or more: each model pops out of the floor Pixar style to its own spot. Approved on LLM-GPT2 Episode 5.
 import RESEQ from './reseq.json';
 import React, { useMemo, useState, useEffect } from 'react';
 import { delayRender, continueRender } from 'remotion';
@@ -16,6 +16,18 @@ import CFG from './cfg.json';
 import META from './sprites.json';
 import { FLOOR, NB, NEdge, nbEdges } from './lib/kit3d.jsx';
 import { MODELS } from './content/Models.jsx';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+const useRBox = (w, h, d, r) => useMemo(() => new RoundedBoxGeometry(w, h, d, 4, r), [w, h, d, r]);
+const wrnd = (s) => { const x = Math.sin(s * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const useWood = () => useMemo(() => { const S = 512, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d');
+  g.fillStyle = '#c8956a'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 140; i++) { const x = wrnd(i * 7.1) * S, w = 1 + wrnd(i * 3.3) * 4; g.strokeStyle = `rgba(${90 + wrnd(i) * 40},${50 + wrnd(i + 1) * 25},${25 + wrnd(i + 2) * 15},${0.12 + wrnd(i + 3) * 0.25})`; g.lineWidth = w; g.beginPath();
+    for (let y = 0; y <= S; y += 16) { const xx = x + Math.sin(y * 0.02 + i) * 6 + Math.sin(y * 0.005 + i * 2) * 14; if (y) g.lineTo(xx, y); else g.moveTo(xx, y); } g.stroke(); }
+  const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = 8; return tx; }, []);
+// studio environment: soft realistic reflections on every material (no glow, no neon)
+export const StudioEnv = ({ k = 0.55 }) => { const { gl, scene } = useThree(); useMemo(() => { const pm = new THREE.PMREMGenerator(gl); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = k * 0.7; }, [gl, scene]); return null; };
+
 
 const Wd = 1080, Hd = 1920, FOV = 36;
 const SEGS = CFG.world.segs; const LN = CFG.lines;
@@ -23,8 +35,8 @@ const SPEED = META.speed; const RAMP = 0.4;
 const walks = SEGS.filter((s) => s[0] === 'walk'); const TW = walks[0][2] - walks[0][1];
 const GAP = SPEED * (TW - RAMP);
 const ZK = (k) => -k * GAP;
-const PX = 0.5, EX = -0.25, EZ = 0.9;  // professor screen-left; Emily half a step behind him (frees the left column)
-const OX = 0.3;                        // warm key light, just screen-left of the Professor's head
+const PX = 0.32, EX = -0.65, EZ = 0.9;  // Professor centre-left, Emily half a step behind on his right with a clear gap between them; frees the left column
+const OX = PX - 0.2;                        // warm key light, just screen-left of the Professor's head
 const ORANGE = '#F97316', WARM = '#F5F1E8', TEAL = '#2DD4BF', PURPLE = '#A78BFA', GREY = '#7d8b85';
 // Per-episode look (cfg.theme). Episode 4 used 'teal-neon'; rotate themes so the series doesn't repeat one neon.
 const THEMES = {
@@ -56,7 +68,7 @@ export const camPose = (t) => {
   const w = SEGS.find((x) => x[0] === 'walk' && t >= x[1] - 0.3 && t < x[2] + 0.9); let orb = 0;
   if (w) { const u = clamp((t - (w[1] - 0.3)) / (w[2] - w[1] + 1.2)); orb = (1 - sm(u)) * Math.sin(Math.PI * Math.min(1, u * 1.6 + 0.35)) * 1.1 * (w[3] % 2 ? 1 : -1); }
   const wp = [-0.15 + sway + orb, 2.05 + bob, zc], wl = [0.35 + orb * 0.35, 0.95, zs + 0.5];
-  const orb2 = Math.sin(t * 0.22) * 0.35; // slow orbit while they talk: motion parallax shows the depth of the objects
+  const orb2 = Math.sin(t * 0.22) * 0.2; // slow orbit while they talk: motion parallax shows the depth of the objects
   const sp = [1.9 + orb2, 2.05 + bob, zs - 7.4], sl = [0.75, 1.25, zs - 0.6];
   return { pos: wp.map((v, i) => lerp(v, sp[i], k)), look: wl.map((v, i) => lerp(v, sl[i], k)) };
 };
@@ -150,47 +162,93 @@ const stopOf = (k) => SEGS.find((s) => s[0] === 'stop' && s[3] === k);
 // popT = the frame the first tile breaks the floor (mix3d.py puts the rise SFX peak here, cfg.world.pops)
 export const popT = (k) => (CFG.world.pops && CFG.world.pops[k] != null ? CFG.world.pops[k] : (stopOf(k) ? stopOf(k)[1] - 0.5 : 1e9));
 const sinkT = (k) => (k === (CFG.world.stations || []).length - 1 ? 1e9 : stopOf(k) ? stopOf(k)[2] - 0.2 : 1e9);   // the last box stays up: it is the end frame pinned to the board       // sinks back into the floor as they set off
-const AX = 1.28, AZ = -1.0;                                        // the diagram column: screen-left of the Professor, 1 m in front
+// pedestal layout (solved with a projection check so nothing touches a character and the left edge keeps a gap):
+// one model: a 0.48 m pedestal turned 0.7 rad. LAY[2]/LAY[3] are only used if a multi-model table is ever forced.
+const LAY = { 1: { x: 1.45, z: 0.0, yaw: 0.7 }, 2: { x: 1.3, z: -0.35, yaw: 0.55 }, 3: { x: 1.3, z: -0.1, yaw: 0.65, sp: 0.36 } };
+// two or more models: no table. Each pops out of the floor to its own spot (Pixar pop) and hovers; the first at hand
+// height screen-left, the next higher and further back, so the station reads in depth and never crowds the Professor.
+const FSLOT = [[1.5, 0.62, -0.9], [1.45, 1.5, 0.9], [1.25, 2.15, 2.0]];   // solved: >= 60 px from the left edge, >= 70 px from his hand, labels clear
+const FSCALE = [1.4, 1.8, 2.0];   // per slot: further-back slots are bigger so every object reads the same size
+const PSCALE = 1.25;               // objects on the single pedestal
+const labelY = (kind, ms) => ((MODELS[kind] && MODELS[kind].h) || 0.34) * 1.15 * ms + 0.12;
+const lay = (n) => LAY[Math.min(3, Math.max(1, n))];
+const AX = 1.3, AZ = -0.6;
 const K = (t, c, d = 0.5) => (c == null ? 0 : clamp((t - c) / d));
 const useNameTex = (txt, ready) => useMemo(() => { const W = 900, H = 200, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
-  g.font = `800 120px ${BF}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = NB.col; g.shadowBlur = 14; g.fillStyle = '#f2fbf9'; g.fillText(txt, W / 2, H / 2 + 6); g.shadowBlur = 0; g.fillText(txt, W / 2, H / 2 + 6);
+  let fs = 120; g.font = `800 ${fs}px ${BF}`; while (g.measureText(txt).width > W - 40 && fs > 50) { fs -= 4; g.font = `800 ${fs}px ${BF}`; } g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = 'rgba(0,0,0,0.85)'; g.shadowBlur = 16; g.fillStyle = '#fbf6ee'; g.fillText(txt, W / 2, H / 2 + 6); g.shadowBlur = 0; g.fillText(txt, W / 2, H / 2 + 6);
   const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 8; return tx; }, [txt, ready]);
 
 // one model on the cap: pops up on its cue word, turns slowly; when switched off (greyed) it dims and shrinks
-const ModelOn = ({ m, t, x, face, ready, H0 }) => {
-  const sc = backE(K(t, m.at, 0.6)); if (sc <= 0.001) return null; const off = m.off != null ? K(t, m.off, 0.6) : 0;
-  const R = MODELS[m.kind]; const name3 = useNameTex(m.label || (R ? R.label : m.kind.toUpperCase()), ready);
+const ModelOn = ({ m, t, x, face, lface = face, ready, H0, ly = 0.66, grow = true, ms = 1 }) => {
+  const R = MODELS[m.kind]; const name3 = useNameTex(m.label || (R ? R.label : m.kind.toUpperCase()), ready);   // hook first, every frame
+  const sc = grow ? backE(K(t, m.at, 0.6)) : (t >= m.at - 0.15 ? 1 : 0); if (sc <= 0.001) return null; const off = m.off != null ? K(t, m.off, 0.6) : 0;
   const M = R ? R.C : null; if (!M) return null;
   return (<group position={[x, H0, 0]}>
-    <group rotation={[0, face + 0.3 * Math.sin(t * 0.5 + x * 4), 0]}><group scale={[1 - off * 0.25, 1 - off * 0.25, 1 - off * 0.25]}><M t={t} s={sc * 1.15} /></group></group>
+    <group rotation={[0, face + 0.18 * Math.sin(t * 0.5 + x * 4), 0]}><group scale={[1 - off * 0.25, 1 - off * 0.25, 1 - off * 0.25]}><M t={t} s={sc * 1.15 * ms} /></group></group>
     {off > 0.02 && <mesh position={[0, 0.3, 0]}><sphereGeometry args={[0.3, 20, 16]} /><meshBasicMaterial color="#0b1311" transparent opacity={0.55 * off} depthWrite={false} clippingPlanes={[FLOOR]} /></mesh>}
-    <mesh position={[0, 0.66, 0]} rotation={[0, face, 0]}><planeGeometry args={[0.44, 0.098]} /><meshBasicMaterial map={name3} transparent opacity={clamp(sc) * (1 - off * 0.6)} toneMapped={false} depthWrite={false} clippingPlanes={[FLOOR]} /></mesh>
+    <mesh position={[0, ly, 0]} rotation={[0, lface, 0]}><planeGeometry args={[0.44, 0.098]} /><meshBasicMaterial map={name3} transparent opacity={clamp(sc) * (1 - off * 0.6)} toneMapped={false} depthWrite={false} clippingPlanes={[FLOOR]} /></mesh>
   </group>); };
 const STATIONS = CFG.world.stations || [];
 // the station box: rises through the floor to hand height (1.4 s from popT), the cap lands (popT + 1.25 s),
 // the models appear on their cues, an arrow joins neighbours, and it all sinks back as they walk on
 const NeonBoxStation = ({ k, t }) => {
-  const p0 = popT(k); const rise = sm(K(t, p0, 1.4)); const down = sm(K(t, sinkT(k), 0.8)); if (rise <= 0.001 || down >= 0.999) return null;
+  // all hooks first (same order every frame), then the early return
   const models = (STATIONS[k] && STATIONS[k].models) || []; const n = Math.max(1, models.length); const multi = n > 1;
-  const SP = 0.42; const H = NB.h, W = multi ? SP * n - 0.02 : NB.w, D = NB.w; const y0 = -H * (1 - rise) - (H + 1.0) * down;
-  const cap = backE(K(t, p0 + 1.25, 0.55)); const glow = 0.9 + 0.1 * Math.sin(t * 2.4); const ready = useFontsReady();
-  const c = camPose(t).pos; const face = Math.atan2(c[0] - AX, c[2] - (ZK(k) + AZ));
+  const SP = (lay(n).sp || 0.42); const H = NB.h, W = multi ? SP * n - 0.02 : NB.w + 0.06, D = NB.w + 0.06;
+  const ready = useFontsReady(); const wood = useWood(); const gBody = useRBox(W, H, D, 0.02); const gFoot = useRBox(W + 0.03, 0.06, D + 0.03, 0.012); const gTop = useRBox(W + 0.06, NB.cap, D + 0.06, 0.012);
+  const p0 = popT(k); const rise = sm(K(t, p0, 1.4)); const down = sm(K(t, sinkT(k), 0.8)); if (rise <= 0.001 || down >= 0.999) return null;
+  const y0 = -H * (1 - rise) - (H + 1.0) * down;
+  const cap = backE(K(t, p0 + 1.25, 0.35)); const glow = 0.9 + 0.1 * Math.sin(t * 2.4);
+  const L0 = lay(n); const c = camPose(t).pos; const face = Math.atan2(c[0] - L0.x, c[2] - (ZK(k) + L0.z)); const YAW = L0.yaw;
   const X = (i) => (i - (n - 1) / 2) * SP;
-  return (<group rotation={[0, multi ? face : 0, 0]}>
+  return (<group rotation={[0, face + YAW, 0]}>
     <group position={[0, y0, 0]}>
-      <mesh position={[0, H / 2, 0]}><boxGeometry args={[W, H, D]} /><meshPhysicalMaterial color="#0c2622" roughness={0.18} metalness={0.1} transparent opacity={0.8} emissive={NB.col} emissiveIntensity={0.025} clippingPlanes={[FLOOR]} /></mesh>
-      {nbEdges(W, H, D).map(([a, b], i) => <NEdge key={i} a={a} b={b} col={NB.col} glow={glow} />)}
-      {cap > 0.001 && (<group position={[0, H + lerp(0.45, 0, clamp(cap)), 0]}>
-        <mesh position={[0, NB.cap / 2, 0]}><boxGeometry args={[W + 0.06, NB.cap, D + 0.06]} /><meshStandardMaterial color="#13201d" roughness={0.3} metalness={0.7} clippingPlanes={[FLOOR]} /></mesh>
-        {nbEdges(W + 0.06, NB.cap, D + 0.06).map(([a, b], i) => <NEdge key={'c' + i} a={a} b={b} col={NB.col} glow={clamp(cap) * glow} />)}
-        {models.map((m, i) => <ModelOn key={i} m={m} t={t} x={X(i)} face={multi ? 0 : face} ready={ready} H0={NB.cap} />)}
+      {/* pedestal body: warm walnut, rounded edges, a darker plinth at the foot, two brass inlays */}
+      <mesh position={[0, H / 2, 0]} geometry={gBody}><meshPhysicalMaterial map={wood} color="#b07a52" roughness={0.55} clearcoat={0.35} clearcoatRoughness={0.4} clippingPlanes={[FLOOR]} /></mesh>
+      <mesh position={[0, 0.03, 0]} geometry={gFoot}><meshPhysicalMaterial color="#3b2416" roughness={0.6} clippingPlanes={[FLOOR]} /></mesh>
+      {[0.32, 0.68].map((f) => <mesh key={f} position={[0, H * f, D / 2 + 0.0015]}><boxGeometry args={[W * 0.86, 0.006, 0.003]} /><meshStandardMaterial color="#c9a46a" roughness={0.3} metalness={0.8} clippingPlanes={[FLOOR]} /></mesh>)}
+      {cap > 0.001 && (<group position={[0, H + lerp(0.06, 0, clamp(cap)), 0]}>
+        {/* the top: a lighter oak slab on a thin brass edge */}
+        <mesh position={[0, NB.cap / 2, 0]} geometry={gTop}><meshPhysicalMaterial map={wood} color="#8a5a38" roughness={0.6} clearcoat={0.15} clearcoatRoughness={0.5} clippingPlanes={[FLOOR]} /></mesh>
+        <mesh position={[0, 0.004, 0]}><boxGeometry args={[W + 0.065, 0.006, D + 0.065]} /><meshStandardMaterial color="#c9a46a" roughness={0.3} metalness={0.85} clippingPlanes={[FLOOR]} /></mesh>
+        {models.map((m, i) => <ModelOn key={i} m={m} t={t} x={X(i)} face={-YAW * 0.55} lface={-YAW} ready={ready} H0={NB.cap} ly={Math.max(0.66, labelY(m.kind, PSCALE))} ms={PSCALE} />)}
         {models.slice(1).map((m, i) => { if (K(t, models[i].at, 0.6) < 1 || K(t, m.at, 0.6) < 1) return null; const a = sm(K(t, m.at + 0.3, 0.5)); const Ln = 0.12 * a;
-          return <group key={'ar' + i} position={[(X(i) + X(i + 1)) / 2, NB.cap + 0.3, 0]} rotation={[0, 0, Math.PI / 2]}><mesh position={[0, Ln / 2 - 0.06, 0]}><cylinderGeometry args={[0.007, 0.007, Ln, 8]} /><meshBasicMaterial color="#cfd8d6" clippingPlanes={[FLOOR]} /></mesh>{a > 0.9 && <mesh position={[0, 0.07, 0]} rotation={[0, 0, Math.PI]}><coneGeometry args={[0.018, 0.04, 12]} /><meshBasicMaterial color="#cfd8d6" clippingPlanes={[FLOOR]} /></mesh>}</group>; })}
+          return <group key={'ar' + i} position={[(X(i) + X(i + 1)) / 2, NB.cap + 0.3, 0]} rotation={[0, 0, Math.PI / 2]}><mesh position={[0, Ln / 2 - 0.06, 0]}><cylinderGeometry args={[0.007, 0.007, Ln, 8]} /><meshStandardMaterial color="#e8e2d6" roughness={0.4} clippingPlanes={[FLOOR]} /></mesh>{a > 0.9 && <mesh position={[0, 0.07, 0]} rotation={[0, 0, Math.PI]}><coneGeometry args={[0.018, 0.04, 12]} /><meshStandardMaterial color="#e8e2d6" roughness={0.4} clippingPlanes={[FLOOR]} /></mesh>}</group>; })}
       </group>)}
     </group>
-    <mesh position={[0, 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[multi ? 0.35 * n : 0.5, 48]} /><meshBasicMaterial color={NB.col} transparent opacity={0.16 * rise * (1 - down)} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh>
+    {/* soft contact shadow on the floor instead of a neon glow */}
+    <mesh position={[0, 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[multi ? 0.3 * n : 0.4, 48]} /><meshBasicMaterial color="#000000" transparent opacity={0.45 * rise * (1 - down)} depthWrite={false} /></mesh>
   </group>); };
-const Station = ({ k, t }) => <group position={[AX, 0, ZK(k) + AZ]}><NeonBoxStation k={k} t={t} /></group>;
+// Pixar pop: a light flash on the floor (anticipation), the object shoots up stretched, overshoots its spot, squashes
+// as it settles with a damped wobble, then hovers and turns; a soft shadow under it shrinks as it rises. On exit it
+// does a small hop and pops back down into the floor.
+const popCurve = (t, at, ty, ex) => {
+  const u = (t - (at - 0.15)) / 0.55;                          // 0.15 s anticipation before the cue word, 0.55 s flight
+  if (u <= 0) return null;
+  let y, sy;
+  if (u < 1) { const e = 1 - Math.pow(1 - u, 3); y = ty * (e + 0.12 * Math.sin(Math.PI * u)); sy = 1 + 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.4)); }
+  else { const w = u - 1; const d = Math.exp(-5 * w) * Math.sin(13 * w); y = ty + 0.04 * d; sy = 1 - 0.18 * d; }
+  y += 0.025 * Math.sin(t * 1.7 + ty * 5) * clamp(u - 1.2);   // hover
+  let k = 1; if (ex != null) { const v = clamp((t - ex) / 0.45); y += 0.08 * Math.sin(Math.PI * Math.min(1, v * 1.6)); k = 1 - sm(clamp((v - 0.35) / 0.65)); }
+  const sxz = 1 / Math.sqrt(sy); return { y, sy: sy * k, sxz: sxz * k, u };
+};
+const FloatStation = ({ k, t }) => {
+  const models = (STATIONS[k] && STATIONS[k].models) || []; const ready = useFontsReady(); const ex = sinkT(k) < 1e8 ? sinkT(k) : null;
+  const msOf = (kind, i) => FSCALE[i % 3] * ((MODELS[kind] && MODELS[kind].fs) || 1);
+  // each next object floats above the previous one's label, so a tall object never pushes its label into the next
+  const baseOf = (i) => { let y = FSLOT[0][1]; for (let j = 1; j <= i; j++) y = Math.max(FSLOT[j % 3][1], y + labelY(models[j - 1].kind, msOf(models[j - 1].kind, j - 1)) + 0.12); return y; };
+  return (<group position={[0, 0, ZK(k)]}>{models.map((m, i) => {
+    const [x, ty0, z] = FSLOT[i % FSLOT.length]; const ms = msOf(m.kind, i); const ty = i ? Math.max(ty0, baseOf(i - 1) + labelY(models[i - 1].kind, msOf(models[i - 1].kind, i - 1)) + 0.12) : ty0;
+    const at = m.at != null ? m.at : popT(k) + 0.6; const p = popCurve(t, at, ty, ex);
+    if (!p || p.sy <= 0.01) return null; const c = camPose(t).pos; const face = Math.atan2(c[0] - x, c[2] - (ZK(k) + z));
+    const flash = Math.exp(-Math.max(0, t - (at - 0.15)) * 4); const sh = clamp(1 - p.y / 2.2) * Math.min(1, p.sxz);
+    return (<group key={i} position={[x, 0, z]}>
+      <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.1, 0.17 + 0.1 * (1 - flash), 48]} /><meshBasicMaterial color="#fff1d6" transparent opacity={0.85 * flash} toneMapped={false} depthWrite={false} /></mesh>
+      <mesh position={[0, 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.2, 40]} /><meshBasicMaterial color="#000000" transparent opacity={0.5 * sh} depthWrite={false} /></mesh>
+      <group position={[0, p.y, 0]} scale={[p.sxz, p.sy, p.sxz]}><ModelOn m={{ ...m, at }} t={t} x={0} face={face + 0.35} lface={face} ready={ready} H0={0} ly={labelY(m.kind, ms)} grow={false} ms={ms} /></group>
+    </group>); })}</group>);
+};
+const Station = ({ k, t }) => { const n = ((STATIONS[k] && STATIONS[k].models) || []).length; if (n > 1) return <FloatStation k={k} t={t} />; const L0 = lay(n); return <group position={[L0.x, 0, ZK(k) + L0.z]}><NeonBoxStation k={k} t={t} /></group>; };
 const stationVisible = (t, k) => { const s = stopOf(k); return s && t > popT(k) - 1 && t < sinkT(k) + 1.0; };
 /* ---------- the two characters ---------- */
 // which clip each person shows, and where in it: walking loop, idle loop, or their lip-synced chunk
@@ -208,7 +266,7 @@ const clipAt = (who, t) => {
   const fin = clamp((t - (w.a - 0.2)) / 0.2) * (1 - clamp((t - w.b) / 0.2));
   const r = RS(who, t);
   // Remotion lip sync for 3D: real talking frames re-sequenced to this line (python/reseq.py -> reseq.json)
-  if (r) return [{ clip: `idle${who}`, ct: t - s[1], o: 1 - fin }, { clip: r[0], fixed: r[1], o: fin }];
+  if (r) return fin >= 0.5 ? [{ clip: r[0], fixed: r[1], o: 1 }] : [{ clip: `idle${who}`, ct: t - s[1], o: 1 }];   // hard cut: a dissolve shows two bodies
   return [{ clip: `idle${who}`, ct: t - s[1], o: 1 }];
 };
 const Sprite = ({ who, t }) => {
@@ -237,7 +295,7 @@ export const World3D = ({ t }) => {
       <Sprite who="E" t={t} />
       {ks.length > 0 && (
         <ThreeCanvas width={Wd} height={Hd} style={{ position: 'absolute', inset: 0 }} onCreated={enableClip} camera={{ fov: FOV, near: 0.1, far: 400, position: [0, 2, 6] }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}>
-          <CamRig t={t} /><hemisphereLight args={['#fff4e6', '#1a2622', 1.1]} /><directionalLight position={[2.5, 5, zc - 6]} intensity={1.4} color="#fff1dc" /><ambientLight intensity={0.35} />
+          <CamRig t={t} /><StudioEnv /><hemisphereLight args={['#fff4e6', '#1a2622', 0.7]} /><directionalLight position={[2.5, 5, zc - 6]} intensity={1.6} color="#ffe8cc" /><directionalLight position={[-3, 2.5, zc - 4]} intensity={0.5} color="#cfe8ff" /><ambientLight intensity={0.2} />
           {ks.map((k) => <Station key={k} k={k} t={t} />)}
         </ThreeCanvas>
       )}
