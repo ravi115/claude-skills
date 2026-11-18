@@ -8,7 +8,7 @@ description: "Build a Pipzo Pixar-classroom 3D reel: dramatic beginner-friendly 
 This skill builds a complete 3D-format episode for any topic:
 - an optional cold open on a phone or laptop
 - the HD classroom with close-ups, then a push-in into the board
-- the **3D middle**: a teal star sky with three star layers and a green neon grid floor. The Professor and Emily walk toward the camera and stop at each station. At each stop:
+- the **3D middle**: the **universe** look (night-black sky, warm glowing stars, spinning planets, a dark glass-deck floor with stars below). The Professor and Emily walk toward the camera and stop at each station. At each stop:
   - **one object:** a **walnut pedestal**, turned at an angle, rises out of the floor to the Professor's hand height, its top lands, and the realistic 3D object appears on its spoken cue word with its name above
   - **two or more objects:** no pedestal. Each object **pops out of the floor Pixar style** (anticipation flash, stretch, overshoot, squash, then a hover and slow turn) to its own spot: the first at hand height, the next higher and further back
   - when the two walk on, the pedestal sinks / the objects hop and pop back into the floor
@@ -30,7 +30,11 @@ This skill builds a complete 3D-format episode for any topic:
 4. `src/ep3d/content/Models.jsx`: the 3D models that stand on the caps, registered by kind in `MODELS`. It ships Episode 5's realistic objects (book, brain, envelope, page stack, coins, cloud, office, hospital, bank) and Episode 4's `encoder`/`decoder`. Add new kinds here as `{ C, label, h }`.
 
 **Fixed look (approved on Episode 5; the neon glass box of Episode 4 is retired):**
-- Sky and floor: the teal sky with three star layers and the green neon grid floor. Violet, sunset, aurora and rose skies, and white, yellow, blue and other grid colours, were all tried and rejected.
+- **Sky and floor: the universe look** (approved 2026-11-17, `remotion/project/src/ep3d/universe/Universe.jsx`; references in `references/universe/`). It is the default (`"look": "universe"` in episode.json); `"look": "teal"` gives back the Episode 5 teal sky and green grid.
+  - Sky: near-black (`#020203`), never blue. Warm white stars, the brighter ones with a soft glow. The Milky Way is only a very faint warm haze.
+  - Planets: nine, mixed sizes, each with its own colour and spinning visibly on its axis (wavy bands, swirls and spots so the spin shows). One huge tan gas giant shows only its lower half along the top edge and slides slowly across; the ringed planet beside it is lavender-blue so the two never look alike. The planet group wheels slowly; all motion is centred on the middle of the 3D section and bounded, so no planet leaves for good on a long middle.
+  - Floor: dark tinted glass (`#0a1020`, 72 %) with thin frosted panel seams and a starfield below it. Overlays sit 3 cm above the glass with a polygon offset on the glass, or the far lens makes them z-fight and vanish.
+  - Rejected: a blue sky, bright nebula and dense Milky Way (looked fake), and the mirror, faded-grid, moon-dust and orbit-dial floors.
 - **Realistic, never cartoon-flat or neon.** Every object is a recognisable real thing (book, brain, envelope, coin, building, laptop) built from real geometry with physically based materials (`meshPhysicalMaterial`, clearcoat, sheen) lit by `StudioEnv` (a RoomEnvironment reflection map) plus a warm key and a cool fill. Canvas textures add detail (page edges, keys, windows, labels). Never flat images or icons on planes.
 - **One object = the walnut pedestal** (`NeonBoxStation` in World3D): rounded walnut body, dark plinth, two brass inlays, an oak top on a brass edge, a soft black contact shadow (no glow). It is **always turned** (`LAY[1].yaw` 0.7 rad) so it reads as 3D, never flat to camera. It rises 1.4 s, the top drops a short 6 cm and lands at +1.25 s.
 - **Two or more objects = Pixar pop, no table** (`FloatStation`): a light ring flashes on the floor 0.15 s before the cue word (anticipation), the object shoots up stretched (scale-y 1.35), overshoots its spot, squashes and settles with a damped wobble, then hovers (2.5 cm) and turns slowly; a soft shadow under it shrinks with height. On exit it does a small hop and pops back down. Slots (`FSLOT`): first at hand height screen-left, the next higher and further back, each floating above the previous label (`baseOf`), further slots scaled bigger (`FSCALE`) so all read the same size.
@@ -104,6 +108,7 @@ The worked example is `examples/ep5/episode.json` (with `score`, `sfx` and per-m
 {
   "series": "Large Language Models, GPT-2", "ep": 4, "title": "The Transformer in One Minute",
   "handle": true, "banner": null, "remember": null,
+  "look": "universe",                          // 3D middle look: "universe" (default) or "teal" (Episode 5 sky + green grid)
   "follow": {"next_n": 5, "next_title": "Pretrain, Then Finetune", "tap": false},
   "push": {"after": "P04", "zoom": 5.0},       // push into the board after this line; the 3D middle starts next
   "pull": {"after": "P13", "hold": 0.4},       // pull back to the classroom after this line

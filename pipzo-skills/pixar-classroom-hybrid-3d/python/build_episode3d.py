@@ -151,7 +151,7 @@ for it in items:
         if m[0] not in MOT: sys.exit(f'ERROR motion {m[0]!r}: use one of {sorted(MOT)}')
         motions.append(dict(type=m[0], who=it['who'], t=r3(wt(it['id'], m[1]) if len(m) > 1 else L[it['id']]['t0'] + 0.1)))
 cfg = dict(total=total, lines=L, words=words, shots=S, punch=[], push=push, mid=dict(t0=r3(mid0), end=pull_t['t0']), pull=pull_t,
-           world=dict(segs=sorted(wsegs + stops, key=lambda s: s[1]), pops=pops, stations=stations),
+           world=dict(segs=sorted(wsegs + stops, key=lambda s: s[1]), pops=pops, stations=stations, look=SPEC.get('look', 'universe')),   # look: universe (default) | teal
            banner=banner, remember=remember, follow=follow, motions=sorted(motions, key=lambda m: m['t']),
            meta=dict(series=SPEC['series'], ep=SPEC['ep'], title=SPEC['title'], handle=SPEC.get('handle', True)))
 json.dump(cfg, open(os.path.join(EP_SRC, 'cfg.json'), 'w'), indent=0)

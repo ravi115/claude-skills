@@ -1,6 +1,6 @@
 // LOCKED 3D WORLD. Do not edit per episode: the stations come from cfg.json (built from episode.json) and the
 // models from content/Models.jsx.
-// The middle of a 3D episode: an open space with a glowing teal grid floor, a star sky and three star layers.
+// The middle of a 3D episode: the universe look (universe/Universe.jsx: black sky, warm stars, planets, glass-deck floor), or the teal sky + grid when world.look is "teal".
 // The Professor and Emily walk toward the camera and stop at each station. One model: an angled walnut pedestal
 // rises out of the floor to the Professor's hand height, its top lands, and the realistic model appears on its cue
 // word. Two or more: each model pops out of the floor Pixar style to its own spot. Approved on LLM-GPT2 Episode 5.
@@ -16,6 +16,7 @@ import CFG from './cfg.json';
 import META from './sprites.json';
 import { FLOOR, NB, NEdge, nbEdges } from './lib/kit3d.jsx';
 import { MODELS } from './content/Models.jsx';
+import { UniverseSky, GlassFloor, setUniverseT0, UNIVERSE_BG, UNIVERSE_FOG } from './universe/Universe.jsx';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 const useRBox = (w, h, d, r) => useMemo(() => new RoundedBoxGeometry(w, h, d, 4, r), [w, h, d, r]);
@@ -137,19 +138,23 @@ const StarLayer = ({ t, z0, L }) => { const { g, col, ph } = useLayer(L); const 
   g.attributes.color.needsUpdate = true;
   return (<points geometry={g} position={[0, 0, z0]} rotation={[0.02 * Math.sin(t * 0.05 + L.seed), t * L.drift, 0]}><pointsMaterial map={tx} size={L.size} sizeAttenuation={false} vertexColors transparent alphaTest={0.02} depthWrite={false} fog={false} blending={THREE.AdditiveBlending} /></points>); };
 const Stars = ({ t, z0 }) => <>{LAYERS.map((L) => <StarLayer key={L.seed} t={t} z0={z0} L={L} />)}</>;
+// world.look: "universe" (default, approved 2026-11-17: black sky, warm stars, planets, glass-deck floor) or "teal" (Episode 5 sky + green grid)
+const LOOK = CFG.world.look || 'universe', UNI = LOOK === 'universe';
+if (UNI && SEGS.length) setUniverseT0((SEGS[0][1] + SEGS[SEGS.length - 1][2]) / 2);   // planet motion is centred on the middle of the 3D section
 const Space = ({ t }) => {
   const sky = useSky(), grid = useGrid(); const z0 = charZ(t);
   return (<>
-    <color attach="background" args={[SKY.bg]} />
-    <fog attach="fog" args={[SKY.fog, 18, 95]} />
-    <mesh position={[0, 0, z0]} rotation={[0, t * 0.004, 0]}><sphereGeometry args={[180, 48, 32]} /><meshBasicMaterial map={sky} side={THREE.BackSide} fog={false} /></mesh>
-    <Stars t={t} z0={z0} />
+    <color attach="background" args={[UNI ? UNIVERSE_BG : SKY.bg]} />
+    <fog attach="fog" args={[UNI ? UNIVERSE_FOG : SKY.fog, 18, 95]} />
+    {UNI ? <UniverseSky t={t} z0={z0} /> : (<>
+      <mesh position={[0, 0, z0]} rotation={[0, t * 0.004, 0]}><sphereGeometry args={[180, 48, 32]} /><meshBasicMaterial map={sky} side={THREE.BackSide} fog={false} /></mesh>
+      <Stars t={t} z0={z0} /></>)}
     <hemisphereLight args={['#ffe6c4', '#0b1714', 0.7]} />
     <ambientLight intensity={0.25} />
     <directionalLight position={[3, 9, z0 - 6]} intensity={1.0} color="#ffe0b6" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-camera-far={40} shadow-bias={-0.0004} target-position={[0, 0, z0 - 2]} />
     <pointLight position={[OX, 3.2, z0 - 1.4]} intensity={14} distance={10} decay={2} color="#ffc98a" />
     <pointLight position={[-2.5, 2.5, z0 - 3]} intensity={6} distance={9} decay={2} color="#7ee8d6" />
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -GAP * 6]} receiveShadow><planeGeometry args={[240, 880]} /><meshStandardMaterial map={grid} emissiveMap={grid} emissive="#ffffff" emissiveIntensity={0.55} roughness={0.32} metalness={0.25} /></mesh>
+    {UNI ? <GlassFloor t={t} z0={z0} zc={-GAP * 6} /> : <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -GAP * 6]} receiveShadow><planeGeometry args={[240, 880]} /><meshStandardMaterial map={grid} emissiveMap={grid} emissive="#ffffff" emissiveIntensity={0.55} roughness={0.32} metalness={0.25} /></mesh>}
   </>);
 };
 
